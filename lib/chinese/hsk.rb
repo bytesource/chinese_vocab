@@ -1,4 +1,10 @@
 # encoding: utf-8
+require 'thread'
+require 'open-uri'
+require 'nokogiri'
+require 'cgi'
+require 'string_to_pinyin'
+
 module Chinese
   class HSK
     attr_reader :col
@@ -27,6 +33,7 @@ module Chinese
     def self.remove_redundant_single_char_words(unique_words)
       puts "remove_redundant_single_char_words: start"
       single_char_words, multi_char_words = unique_words.partition {|word| word.length == 1 }
+      return single_char_words  if multi_char_words.empty?
 
       non_redundant_single_char_words = single_char_words.reduce([]) {|acc,single_c|
 
@@ -39,6 +46,36 @@ module Chinese
       }
 
       non_redundant_single_char_words + multi_char_words
+    end
+
+
+    def add_sentences_from(uri, unique_words, chin_css, engl_css)
+      queue     = Queue.new
+      semaphore = Mutex.new
+      unique_words.each {|word| queue << word }
+      result = []
+
+      5.times.map {
+        Thread.new do
+
+          while(!queue.empty?) do
+
+            word = CGI.escape(queue.pop)
+            url  = uri.gsub(/{}/, word)
+            doc  = Nokogiri::HTML(open(url))
+
+            chinese = doc.at_css(chin_css).text.strip
+            english = doc.at_css(engl_css).text.strip
+            pinyin  = chinese.to_pinyin  unless chinese.nil?
+
+            local_result = [word, chinese, pinyin, english]
+
+            semaphore.synchronize { result << local_result }
+          end
+        end
+      }.each {|thread| thread.join }
+
+      result
     end
 
 
@@ -55,27 +92,33 @@ module Chinese
     def add_target_words_with_threads(csv_data, unique_words)
       puts "add_target_words_with_threads"
       require 'thread'
-      queue     = Queue.new
-      semaphore = Mutex.new
-      with_target_words = []
-      csv_data.each {|row| queue << row}
+      from_queue = Queue.new
+      semaphore  = Mutex.new
+      result     = []
+      csv_data.each {|row| from_queue << row}
+      counter = 1
 
       10.times.map {
         Thread.new do
-          while(row = queue.pop) # pop returns nil if called on an empty array
+
+          while(!from_queue.empty?)
+            row = from_queue.pop
             sentence  = row[@col]
-            puts "Just grabbed sentence: #{sentence}"
+            # semaphore.synchronize {
+            #   puts "#{counter}: Just grabbed sentence: #{sentence}"
+            #   counter += 1
+            # }
             # Make a copy to avoid access by several thread at the same time in #add_words_included
-            uniques   = unique_words.dup
-            row[@col] = add_words_included(sentence, uniques)
-            semaphore.synchronize {
-              with_target_words << row
-            }
+            local_uniques = []
+            semaphore.synchronize { local_uniques   = unique_words.dup }
+            row[@col] = add_words_included(sentence, local_uniques)
+
+            semaphore.synchronize { result << row }
           end
         end
-      }.each {|thread| thread.join}
+      }.map {|thread| thread.join}
 
-      with_target_words
+      result
     end
 
 
@@ -105,15 +148,27 @@ module Chinese
       }
     end
 
+    def add_word_list_and_count_tags(with_target_words, prefix="unique_")
+      puts "add_word_list_and_count_tags"
+      with_target_words.map {|row|
+        word_list  = row[@col][0].dup
+        word_count = word_list.size
+        # ["他们", "越 来越"] => "[他们] [越 来越]"
+        word_list_tag  = word_list.map {|x| "[#{x}]"}.join(' ')
+        word_count_tag = prefix + word_count.to_s
+        row << word_count_tag << word_list_tag
+        row
+      }
+    end
 
 
     def minimum_necessary_sentences(sorted_by_unique_word_count, unique_words)
       puts "minimum_necessary_sentences: start"
-      rows    = sorted_by_unique_word_count.reverse  # We start with the sentences that contain the most unique words.
+      rows = sorted_by_unique_word_count.reverse  # We start with the sentences that contain the most unique words.
 
       selected_rows   = []
       removed_words   = []
-      remaining_words = unique_words
+      remaining_words = unique_words.dup
 
       rows.each do |row|
         words = row[@col][0]
@@ -138,7 +193,7 @@ module Chinese
       with_unique_words.map {|row|
         target_row = row[@col].dup
         sentence   = target_row[1]
-        row[@col]   = sentence
+        row[@col]  = sentence
         row
       }
     end
@@ -146,21 +201,23 @@ module Chinese
 
     def contains_all_unique_words?(csv_data, unique_words)
       puts "contains_all_unique_words?: start"
-      unique_word_size   = unique_words.size
 
-      unique_words_found = unique_words.reduce(0) do |sum,word|
+      unique_words_found = unique_words.reduce([]) {|acc,word|
 
         already_found = csv_data.find {|row|
           sentence = row[@col]
           include_every_char?(word, sentence)
         }
         if already_found
-          sum += 1
-          sum
+          acc << word
         end
-      end
+        acc
+      }
 
-      unique_words_found == unique_word_size
+      p unique_words - unique_words_found if unique_words_found.size != unique_words.size
+      puts "Unique words count = #{unique_words.size}."
+      puts "Found words size = #{unique_words_found.size}."
+      unique_words_found.size == unique_words.size
     end
 
 
