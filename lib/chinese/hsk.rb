@@ -7,10 +7,11 @@ require 'string_to_pinyin'
 
 module Chinese
   class HSK
-    attr_reader :col
+    attr_reader :col, :not_found
 
     def initialize(sentence_col=1)
       @col = sentence_col - 1
+      @not_found = []
     end
 
 
@@ -48,8 +49,71 @@ module Chinese
       non_redundant_single_char_words + multi_char_words
     end
 
+    def add_sentences(unique_words, source = :nciku)
 
-    def add_sentences_from(uri, unique_words, chin_css, engl_css)
+      queue     = Queue.new
+      semaphore = Mutex.new
+      unique_words.each {|word| queue << word }
+      result = []
+
+      5.times.map {
+        Thread.new do
+
+          while(!queue.empty?) do
+            word = queue.pop
+            url  = 'http://www.nciku.com/search/all/examples/'
+            chinese, english = "", ""
+
+            case source.to_sym
+            when :nciku
+              chinese, english = scrap_nciku(url, word)
+            when :jukuu
+              chinese, english = scrap_juku(url, word)
+            else
+              raise Exception, "'#{source}' is not a valid source. Please choose either :nciku or :jukuu."
+            end
+
+            if chinese.empty? || english.empty?
+              @not_found << word
+            else
+              pinyin       = chinese.to_pinyin
+              local_result = [word, chinese, pinyin, english]
+
+              semaphore.synchronize { result << local_result }
+            end
+          end
+        end
+      }.each {|thread| thread.join }
+
+      result
+    end
+
+    # Returns the first [sentence, translation] pair found.
+    def scrap_nciku(url, word)
+      word_escaped = CGI.escape(word)
+      parent_css   = 'div.examples_box > dl'
+      chin_css     = 'dt > span'
+      engl_css     = 'dd > span.tc_sub'
+      uri          = url + word_escaped
+
+      node = Nokogiri::HTML(open(uri)).css(parent_css) # There is only one node at 'parent_css'
+      chinese_html = node.at_css(chin_css)      # Return the first match (HTML as String).
+      chinese_text = extract_text(chinese_html) # Returns nil if no text is found.
+      english_html = node.at_css(engl_css)      # Return the first match (HTML as String).
+      english_text = extract_text(english_html) # Returns nil if no text is found.
+      [chinese_text, english_text]
+    end
+
+
+
+    def extract_text(node)
+      return "" if node.nil?
+      node.text.strip
+    end
+
+    def add_sentences_from_jukuu(unique_words)
+      chin_css  = '.c > td[2]'
+      engl_css  = '.e > td[2]'
       queue     = Queue.new
       semaphore = Mutex.new
       unique_words.each {|word| queue << word }
@@ -60,15 +124,19 @@ module Chinese
 
           while(!queue.empty?) do
 
-            word = CGI.escape(queue.pop)
-            url  = uri.gsub(/{}/, word)
-            doc  = Nokogiri::HTML(open(url))
+            word         = queue.pop
+            word_escaped = CGI.escape(word)
+            url          = 'http://www.jukuu.com/search.php?q=' + word_escaped
+            doc          = Nokogiri::HTML(open(url))
 
-            chinese = doc.at_css(chin_css).text.strip
-            english = doc.at_css(engl_css).text.strip
-            pinyin  = chinese.to_pinyin  unless chinese.nil?
-
-            local_result = [word, chinese, pinyin, english]
+            chinese, english = shortest_sentence(doc,chin_css,engl_css)
+            if chinese.nil?
+              @not_found << word
+              local_result = [word, "$$chinese", "$$pinyin", "$$english"]
+            else
+              pinyin       = chinese.to_pinyin  unless chinese.nil?
+              local_result = [word, chinese, pinyin, english]
+            end
 
             semaphore.synchronize { result << local_result }
           end
@@ -76,6 +144,18 @@ module Chinese
       }.each {|thread| thread.join }
 
       result
+    end
+
+    def scrap_jukuu(url, word)
+      word_escaped = CGI.escape(word)
+      chin_css     = '.c > td[2]'
+      engl_css     = '.e > td[2]'
+      uri          = url + word_escaped
+
+      Nokogiri::HTML(open(uri)).css(parent_css)
+      chinese   = html.css(chin_css).map {|node| node.text.strip}
+      english   = html.css(engl_css).map {|node| node.text.strip}
+      chinese.zip(english).sort_by {|pair| pair[0].length }.first
     end
 
 
