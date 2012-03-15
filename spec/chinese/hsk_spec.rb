@@ -17,14 +17,14 @@ describe Chinese::HSK do
 
   context :add_sentences_from do
 
-    word_array   = CSV.read('spec/data/hsk_missing_words.csv', :encoding => 'utf - 8')
+    word_array   = CSV.read('spec/data/hsk_missing_words.csv', :encoding => 'utf-8')
     raw_words    = Chinese::HSK.extract_column(word_array, 1)
     unique_words = Chinese::HSK.unique_words(raw_words).take(10) << "rohlfing"
 
     it "should download a sentence for every word" do
 
-      # sentences = hsk.add_sentences_from_jukuu(unique_words)
-      sentences = hsk.add_sentences(unique_words, :nciku)
+      # sentences = hsk.add_sentences(unique_words, :nciku)
+      sentences = hsk.add_sentences(unique_words, :jukuu)
       p sentences
       hsk.not_found.should == ['rohlfing']
       # [["驮", "驮运曾在沙漠地区被广泛使用。", "tuó yùn céng zài shā mò dì qū bèi guăng fàn shĭ yòng 。",

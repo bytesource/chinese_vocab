@@ -66,9 +66,9 @@ module Chinese
 
             case source.to_sym
             when :nciku
-              chinese, english = scrap_nciku(url, word)
+              chinese, english = scrap_nciku(word)
             when :jukuu
-              chinese, english = scrap_juku(url, word)
+              chinese, english = scrap_jukuu(word)
             else
               raise Exception, "'#{source}' is not a valid source. Please choose either :nciku or :jukuu."
             end
@@ -89,14 +89,14 @@ module Chinese
     end
 
     # Returns the first [sentence, translation] pair found.
-    def scrap_nciku(url, word)
+    def scrap_nciku(word)
       word_escaped = CGI.escape(word)
       parent_css   = 'div.examples_box > dl'
       chin_css     = 'dt > span'
       engl_css     = 'dd > span.tc_sub'
-      uri          = url + word_escaped
+      url          = 'http://www.nciku.com/search/all/examples/' + word_escaped
 
-      node = Nokogiri::HTML(open(uri)).css(parent_css) # There is only one node at 'parent_css'
+      node = Nokogiri::HTML(open(url)).css(parent_css) # There is only one node at 'parent_css'
       chinese_html = node.at_css(chin_css)      # Return the first match (HTML as String).
       chinese_text = extract_text(chinese_html) # Returns nil if no text is found.
       english_html = node.at_css(engl_css)      # Return the first match (HTML as String).
@@ -146,17 +146,47 @@ module Chinese
       result
     end
 
-    def scrap_jukuu(url, word)
+    def scrap_jukuu(word)
       word_escaped = CGI.escape(word)
-      chin_css     = '.c > td[2]'
-      engl_css     = '.e > td[2]'
-      uri          = url + word_escaped
+      parent_css     = "table#Table1 table[width = '680']"
+      chin_css       = '.c > td[2]'
+      engl_css       = '.e > td[2]'
+      url            = 'http://www.jukuu.com/search.php?q=' + word_escaped
 
-      Nokogiri::HTML(open(uri)).css(parent_css)
-      chinese   = html.css(chin_css).map {|node| node.text.strip}
-      english   = html.css(engl_css).map {|node| node.text.strip}
-      chinese.zip(english).sort_by {|pair| pair[0].length }.first
+      sentence_pairs = Nokogiri::HTML(open(url)).css(parent_css).map do |node|
+        chinese_html = node.at_css(chin_css)      # Return the first (and only) match (HTML as String).
+        chinese_text = extract_text(chinese_html) # Returns nil if no text is found.
+        english_html = node.at_css(engl_css)      # Return the first (and only) match (HTML as String).
+        english_text = extract_text(english_html) # Returns nil if no text is found.
+        [chinese_text, english_text]
+      end
+      second_shortest(remove_pairs_with_empty_items(sentence_pairs))
     end
+
+    # undefined method `empty?' for nil:NilClass
+    #  # ./lib/chinese/hsk.rb:76:in `block (2 levels) in add_sentences'
+
+
+
+    def remove_pairs_with_empty_items(sentence_pairs)
+      sentence_pairs.reject {|(cn,en)| cn.empty? || en.empty? }
+    end
+
+    def second_shortest(sentence_pairs)
+      sentence_pairs.sort_by {|(cn,_)| cn.length }.take(2).last
+    end
+
+    # def scrap_jukuu(url, word)
+    #   word_escaped = CGI.escape(word)
+    #   chin_css     = '.c > td[2]'
+    #   engl_css     = '.e > td[2]'
+    #   uri          = url + word_escaped
+
+    #   Nokogiri::HTML(open(uri)).css(parent_css)
+    #   chinese   = html.css(chin_css).map {|node| node.text.strip}
+    #   english   = html.css(engl_css).map {|node| node.text.strip}
+    #   chinese.zip(english).sort_by {|pair| pair[0].length }.first
+    # end
 
 
     def add_target_words(csv_data, unique_words)
