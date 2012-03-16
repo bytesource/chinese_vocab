@@ -111,40 +111,6 @@ module Chinese
       node.text.strip
     end
 
-    def add_sentences_from_jukuu(unique_words)
-      chin_css  = '.c > td[2]'
-      engl_css  = '.e > td[2]'
-      queue     = Queue.new
-      semaphore = Mutex.new
-      unique_words.each {|word| queue << word }
-      result = []
-
-      5.times.map {
-        Thread.new do
-
-          while(!queue.empty?) do
-
-            word         = queue.pop
-            word_escaped = CGI.escape(word)
-            url          = 'http://www.jukuu.com/search.php?q=' + word_escaped
-            doc          = Nokogiri::HTML(open(url))
-
-            chinese, english = shortest_sentence(doc,chin_css,engl_css)
-            if chinese.nil?
-              @not_found << word
-              local_result = [word, "$$chinese", "$$pinyin", "$$english"]
-            else
-              pinyin       = chinese.to_pinyin  unless chinese.nil?
-              local_result = [word, chinese, pinyin, english]
-            end
-
-            semaphore.synchronize { result << local_result }
-          end
-        end
-      }.each {|thread| thread.join }
-
-      result
-    end
 
     def scrap_jukuu(word)
       word_escaped = CGI.escape(word)
@@ -169,24 +135,22 @@ module Chinese
 
 
     def remove_pairs_with_empty_items(sentence_pairs)
-      sentence_pairs.reject {|(cn,en)| cn.empty? || en.empty? }
+      sentence_pairs.reject {|(cn,en)| cn.nil? || en.nil? }
     end
 
     def second_shortest(sentence_pairs)
       sentence_pairs.sort_by {|(cn,_)| cn.length }.take(2).last
     end
 
-    # def scrap_jukuu(url, word)
-    #   word_escaped = CGI.escape(word)
-    #   chin_css     = '.c > td[2]'
-    #   engl_css     = '.e > td[2]'
-    #   uri          = url + word_escaped
+    def longest(sentence_pairs)
+      sentence_pairs.sort_by {|(cn,_)| cn.length }.last
+    end
 
-    #   Nokogiri::HTML(open(uri)).css(parent_css)
-    #   chinese   = html.css(chin_css).map {|node| node.text.strip}
-    #   english   = html.css(engl_css).map {|node| node.text.strip}
-    #   chinese.zip(english).sort_by {|pair| pair[0].length }.first
-    # end
+    def middle_large(sentence_pairs)
+      sorted = sentence_pairs.sort_by {|(cn,_)| cn.length }
+      length = sorted.length
+      sorted.find {|(cn,_)| cn.size >= length/2 }
+    end
 
 
     def add_target_words(csv_data, unique_words)

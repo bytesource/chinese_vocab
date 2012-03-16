@@ -1,5 +1,5 @@
 # encoding: utf-8
-html = <<HTML
+html = <<-HTML
 <html>
 <HEAD>
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
@@ -265,8 +265,42 @@ href="http://www.jukuu.com/hezuo.htm" target="_blank">合作联盟</A></FONT></p
 HTML
 
 require 'nokogiri'
-css = "table#Table1 table[width = '680']"
-Nokogiri::HTML(html).css(css).each do |n|
-  puts n
-  puts "========================"
+class Array
+  # Input:  [1,2,3,4,5]
+  # Output: [[1, 2], [2, 3], [3, 4], [4, 5]]
+  def overlap_pairs
+    second = self.dup.drop(1)
+    self.each_with_index.inject([]) {|acc,(item,i)|
+      acc << [item,second[i]]  unless second[i].nil?
+      acc
+    }
+  end
 end
+
+require 'nokogiri'
+source = :jukuu
+parent_selector = "table#Table1 table[width = '680']"
+cn_selector     = "//tr[@class='c']"
+en_class        = "e"
+en_selector     = "//tr[@class='#{en_class}']"
+main_node       = Nokogiri::HTML(html).css(parent_selector) # Returns a single node
+
+# CSS selector:   Returns the tags in the order they are specified
+# XPath selector: Return the tags in the order they appear in the document (that's what we want here).
+# Source:         http://stackoverflow.com/questions/5825136/nokogiri-and-finding-element-by-name/5845985#5845985
+target_nodes = main_node.search("#{cn_selector} | #{en_selector}").to_a # Nokogiri::XML::NodeSet => array
+
+# Only match text that has a translation, and vice versa.
+sentence_pairs = target_nodes.overlap_pairs.select {|(node_1,node_2)| node_1['class'] != en_class and node_2['class'] == en_class }
+sentence_pairs = sentence_pairs.map do |(cn_node,en_node)|
+  cn = cn_node.text.strip
+en = en_node
+if source == :jukuu
+  en = en.css('td[2]').text.strip
+else
+  en = en.text.strip
+end
+[cn,en]
+end
+
+p sentence_pairs

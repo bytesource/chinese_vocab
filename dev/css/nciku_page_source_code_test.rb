@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-html <<HTML
+html = <<-HTML
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
 <html>
@@ -328,164 +328,164 @@ function GetCookie(name)
           <table border="0" cellspacing="0" cellpadding="0" class="list_tab list">
             <tr>
               <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-            </tr>
-            <tr>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-            </tr>
-            <tr>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-              <td><a href="#"></a></td>
-            </tr>
-          </table>
-          <p class="page paging"><a href="#" class="pre prev">prev</a><a href="#" class="next">next</a></p>
-          <div class="overlayer">
-            <div class="pinyin">
-              <img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="bl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
-              <p class="text">bianbian<br>bian</p>
-            </div>
-            <table class="zoom" border="0" cellspacing="0" cellpadding="0"><tr><td>人</td></tr></table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+</tr>
+<tr>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+</tr>
+<tr>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+<td><a href="#"></a></td>
+</tr>
+</table>
+<p class="page paging"><a href="#" class="pre prev">prev</a><a href="#" class="next">next</a></p>
+<div class="overlayer">
+<div class="pinyin">
+<img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="bl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
+<p class="text">bianbian<br>bian</p>
+</div>
+<table class="zoom" border="0" cellspacing="0" cellpadding="0"><tr><td>人</td></tr></table>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 <!-- End of Hand write layer -->
 <script language="javascript">
-  SPS.learningLang = 'zh';
-  smartSearchInit();
-  SPS.autoCompleteURL = 'http://ac.nciku.com/ac/select';
+SPS.learningLang = 'zh';
+smartSearchInit();
+SPS.autoCompleteURL = 'http://ac.nciku.com/ac/select';
 </script>
 <script type="text/javascript">
-  SPS.__inst.de_searchbox = new SPS.cm_search01("de_searchbox", undefined);
-  </script><div id="lo_container">
-  <div id="lo_contents" style="*margin-top:0px;">
-    
-    
-    <div id="layer_tip_cn_tts" class="tip_layer" style="left:-999999px;" onmouseover="SPS.commonLayer._show();" onmouseout="SPS.commonLayer._hide();">
-      <img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
-      <div class="tts">
-        <p class="pinyin"><span class="txt_pinyin"></span></p>
-        <p class="han txt_chinese"></p>
+SPS.__inst.de_searchbox = new SPS.cm_search01("de_searchbox", undefined);
+</script><div id="lo_container">
+<div id="lo_contents" style="*margin-top:0px;">
+
+
+<div id="layer_tip_cn_tts" class="tip_layer" style="left:-999999px;" onmouseover="SPS.commonLayer._show();" onmouseout="SPS.commonLayer._hide();">
+<img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
+<div class="tts">
+<p class="pinyin"><span class="txt_pinyin"></span></p>
+<p class="han txt_chinese"></p>
         <div class="autoplay">
           <p class="listen"><a href="#" onclick="SPS.commonLayer._buttonClick(this); this.blur(); return false;"><img src="http://images.nciku.com/static/img/common/tts_autoplay1_off.gif" class="cn_status" width="21" height="20" alt="listen" /></a></p>
-          <input type="checkbox">&nbsp;Auto Play
-        </div>
-      </div>
-    </div>
-    <div id="layer_tip_en_tts" class="tip_layer" style="left:-999999px; margin-left:-99999px;" onmouseover="SPS.commonLayer._show();" onmouseout="SPS.commonLayer._hide();">
-      <img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
-      <div class="autoplay2">
-        <p class="listen"><a href="#" onclick="SPS.commonLayer._buttonClick(this); this.blur(); return false;"><img src="http://images.nciku.com/static/img/common/tts_autoplay2_off.gif" class="en_status" width="15" height="15" alt="listen" /></a></p>
-        <input type="checkbox">&nbsp;Auto Play
-      </div>
-    </div>
+<input type="checkbox">&nbsp;Auto Play
+</div>
+</div>
+</div>
+<div id="layer_tip_en_tts" class="tip_layer" style="left:-999999px; margin-left:-99999px;" onmouseover="SPS.commonLayer._show();" onmouseout="SPS.commonLayer._hide();">
+<img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
+<div class="autoplay2">
+<p class="listen"><a href="#" onclick="SPS.commonLayer._buttonClick(this); this.blur(); return false;"><img src="http://images.nciku.com/static/img/common/tts_autoplay2_off.gif" class="en_status" width="15" height="15" alt="listen" /></a></p>
+<input type="checkbox">&nbsp;Auto Play
+</div>
+</div>
 
-    <div id="layer_tip_wordinfo" class="tip_layer" style="left:-999999px;">
-      <img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
-      <p class="has"><strong>Has</strong> : <a href="#">Collocations</a>, <a href="#">Character Decomposition</a>, <a href="#">Stroke Order</a>, <a href="#">nciku Note</a>, <a href="#">Q&amp;A</a>	</p>
-    </div>
+<div id="layer_tip_wordinfo" class="tip_layer" style="left:-999999px;">
+<img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
+<p class="has"><strong>Has</strong> : <a href="#">Collocations</a>, <a href="#">Character Decomposition</a>, <a href="#">Stroke Order</a>, <a href="#">nciku Note</a>, <a href="#">Q&amp;A</a>	</p>
+</div>
 
-    <div id="layer_tip_userinfo" class="tip_layer" style="left:-999999px;">
-      <img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
-      <ul class="user">
-        <li class="first"><a href="#" class="userlink">
-          <span class="their_nciku">Their nciku</span>
-          <span class="my_nciku">My nciku</span>
-        </a></li>
-        <li><a href="#" class="userlink">Vocab Lists</a></li>
-        <li><a href="#" class="userlink">Posts</a></li>
-        <li><a href="#" class="userlink">Activity</a></li>
-      </ul>
-    </div>
-    <script type="text/javascript">
-      SPS.__inst.COMMON_LAYER = new SPS.cm_layer("COMMON_LAYER", undefined);
-    </script>
-    
-    <div id="lo_contents01">
-      
-      <div class="sbx" id="U0003">
-        <p class="search_r_txt">Search results for <strong>&lsquo;豆浆&rsquo;</strong> </p>				
-        <div class="word_tab">
-          <ul class="cm_tab01">
-            
-            <li class="selected"><a >All</a></li>
-            <li ><a href="/search/zh/examples/%E8%B1%86%E6%B5%86" >Chinese to English Dictionary</a></li>
-            <li ><a href="/search/en/examples/%E8%B1%86%E6%B5%86" >English to Chinese Dictionary</a></li>
-            <li ><a href="/search/cc/examples/%E8%B1%86%E6%B5%86" >Chinese Dictionary</a></li>
-            <li class="none"><span>English Dictionary</span></li>
-          </ul>
-        </div>
-      </div>
-      
-      <div class="sbx" id="U0004">
-        <!-- start of word_box -->					
-        
-        
-        
-        
-        <div class="vspace"></div>
+<div id="layer_tip_userinfo" class="tip_layer" style="left:-999999px;">
+<img src="http://images.nciku.com/static/img/common/blank.gif" class="tl"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="tr"><img src="http://images.nciku.com/static/img/common/blank.gif" alt="" class="br">
+<ul class="user">
+<li class="first"><a href="#" class="userlink">
+<span class="their_nciku">Their nciku</span>
+<span class="my_nciku">My nciku</span>
+</a></li>
+<li><a href="#" class="userlink">Vocab Lists</a></li>
+<li><a href="#" class="userlink">Posts</a></li>
+<li><a href="#" class="userlink">Activity</a></li>
+</ul>
+</div>
+<script type="text/javascript">
+SPS.__inst.COMMON_LAYER = new SPS.cm_layer("COMMON_LAYER", undefined);
+</script>
 
-        <!--/* nciku Javascript Tag v2.8.8 */-->
-        
-        <!--/*
-        * The backup image section of this tag has been generated for use on a
-        * non-SSL page. If this tag is to be placed on an SSL page, change the
-        *   'http://ad.nciku.com/www/delivery/...'
-        * to
-        *   'https://ad.nciku.com/www/delivery/...'
-        *
-        * This noscript section of this tag only shows image banners. There
-        * is no width or height in these banners, so if you want these tags to
-        * allocate space for the ad before it shows, you will need to add this
-        * information to the <img> tag.
-        *
-        * If you do not want to deal with the intricities of the noscript
-        * section, delete the tag (from <noscript>... to </noscript>). On
-        * average, the noscript tag is called from less than 1% of internet
-        * users.
-        */-->
-        
-        <script type='text/javascript'><!--//<![CDATA[
-          var m3_u = (location.protocol=='https:'?'https://ad.nciku.com/www/delivery/ajs.php':'http://ad.nciku.com/www/delivery/ajs.php');
-          var m3_r = Math.floor(Math.random()*99999999999);
-          if (!document.MAX_used) document.MAX_used = ',';
-          document.write ("<scr"+"ipt type='text/javascript' src='"+m3_u);
-          document.write ("?zoneid=117");
-          document.write ('&amp;cb=' + m3_r);
-          if (document.MAX_used != ',') document.write ("&amp;exclude=" + document.MAX_used);
-          document.write (document.charset ? '&amp;charset='+document.charset : (document.characterSet ? '&amp;charset='+document.characterSet : ''));
-          document.write ("&amp;loc=" + escape(window.location));
-          if (document.referrer) document.write ("&amp;referer=" + escape(document.referrer));
-          if (document.context) document.write ("&context=" + escape(document.context));
-          if (document.mmm_fo) document.write ("&amp;mmm_fo=1");
-          document.write ("'><\/scr"+"ipt>");
-          //]]>--></script><noscript><a href='http://ad.nciku.com/www/delivery/ck.php?n=abba0fad&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='http://ad.nciku.com/www/delivery/avw.php?zoneid=117&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=abba0fad' border='0' alt='' /></a></noscript>
+<div id="lo_contents01">
+
+<div class="sbx" id="U0003">
+<p class="search_r_txt">Search results for <strong>&lsquo;豆浆&rsquo;</strong> </p>				
+<div class="word_tab">
+<ul class="cm_tab01">
+
+<li class="selected"><a >All</a></li>
+<li ><a href="/search/zh/examples/%E8%B1%86%E6%B5%86" >Chinese to English Dictionary</a></li>
+<li ><a href="/search/en/examples/%E8%B1%86%E6%B5%86" >English to Chinese Dictionary</a></li>
+<li ><a href="/search/cc/examples/%E8%B1%86%E6%B5%86" >Chinese Dictionary</a></li>
+<li class="none"><span>English Dictionary</span></li>
+</ul>
+</div>
+</div>
+
+<div class="sbx" id="U0004">
+<!-- start of word_box -->					
 
 
-        <div class="sbx" style="margin-top:10px;padding-top:0" id="U0006"><!-- Examples -->
-          <div class="examples_box" style="border:none;" >
-            <h3 class="tit_search_r">Examples (1-4 of 4)</h3>
-            <dl>
-              
-              
-              <dt><span 	 onmouseover="SPS.commonLayer.pinyin(this, 'Xīnshì de dòujiāngjī pèibèi le gǎnyìng huíshuǐ zhuāngzhì。');"
-                >
-                新式的<span class='tc_point02'>豆浆</span>机配备了感应回水装置。
-              </span>
-              <span class="tts_button" onclick="SPS.commonLayer.newTTS(this, '新式的豆浆机配备了感应回水装置。', 'Xīnshì de dòujiāngjī pèibèi le gǎnyìng huíshuǐ zhuāngzhì。');"></span>
-              
-              </dt>
-              <dd class="txt"><span class="tc_sub">		The new soybean milk machine is equipped with a inductive water-regurgitating setting.
-                <span class="tts_button tts_en"
+
+
+<div class="vspace"></div>
+
+<!--/* nciku Javascript Tag v2.8.8 */-->
+
+<!--/*
+* The backup image section of this tag has been generated for use on a
+* non-SSL page. If this tag is to be placed on an SSL page, change the
+*   'http://ad.nciku.com/www/delivery/...'
+* to
+*   'https://ad.nciku.com/www/delivery/...'
+*
+* This noscript section of this tag only shows image banners. There
+* is no width or height in these banners, so if you want these tags to
+* allocate space for the ad before it shows, you will need to add this
+* information to the <img> tag.
+*
+* If you do not want to deal with the intricities of the noscript
+* section, delete the tag (from <noscript>... to </noscript>). On
+* average, the noscript tag is called from less than 1% of internet
+* users.
+*/-->
+
+<script type='text/javascript'><!--//<![CDATA[
+                                              var m3_u = (location.protocol=='https:'?'https://ad.nciku.com/www/delivery/ajs.php':'http://ad.nciku.com/www/delivery/ajs.php');
+                                              var m3_r = Math.floor(Math.random()*99999999999);
+                                              if (!document.MAX_used) document.MAX_used = ',';
+                                                document.write ("<scr"+"ipt type='text/javascript' src='"+m3_u);
+                                                document.write ("?zoneid=117");
+                                                document.write ('&amp;cb=' + m3_r);
+                                                if (document.MAX_used != ',') document.write ("&amp;exclude=" + document.MAX_used);
+                                                  document.write (document.charset ? '&amp;charset='+document.charset : (document.characterSet ? '&amp;charset='+document.characterSet : ''));
+                                                  document.write ("&amp;loc=" + escape(window.location));
+                                                  if (document.referrer) document.write ("&amp;referer=" + escape(document.referrer));
+                                                    if (document.context) document.write ("&context=" + escape(document.context));
+                                                      if (document.mmm_fo) document.write ("&amp;mmm_fo=1");
+                                                        document.write ("'><\/scr"+"ipt>");
+                                                        //]]>--></script><noscript><a href='http://ad.nciku.com/www/delivery/ck.php?n=abba0fad&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='http://ad.nciku.com/www/delivery/avw.php?zoneid=117&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=abba0fad' border='0' alt='' /></a></noscript>
+
+
+                                                        <div class="sbx" style="margin-top:10px;padding-top:0" id="U0006"><!-- Examples -->
+                                                        <div class="examples_box" style="border:none;" >
+                                                        <h3 class="tit_search_r">Examples (1-4 of 4)</h3>
+                                                        <dl>
+                                                        
+                                                        
+                                                        <dt><span 	 onmouseover="SPS.commonLayer.pinyin(this, 'Xīnshì de dòujiāngjī pèibèi le gǎnyìng huíshuǐ zhuāngzhì。');"
+                                                        >
+                                                        新式的<span class='tc_point02'>豆浆</span>机配备了感应回水装置。
+                                                        </span>
+                                                        <span class="tts_button" onclick="SPS.commonLayer.newTTS(this, '新式的豆浆机配备了感应回水装置。', 'Xīnshì de dòujiāngjī pèibèi le gǎnyìng huíshuǐ zhuāngzhì。');"></span>
+                                                        
+                                                        </dt>
+                                                        <dd class="txt"><span class="tc_sub">		The new soybean milk machine is equipped with a inductive water-regurgitating setting.
+                                                          <span class="tts_button tts_en"
                   onclick="SPS.commonLayer.newTTS(this, 'The new soybean milk machine is equipped with a inductive water-regurgitating setting.', '');"></span>
               </span></dd>
               
@@ -771,19 +771,19 @@ _bindEvent("http://www.nciku.com");
       if (document.context) document.write ("&context=" + escape(document.context));
       if (document.mmm_fo) document.write ("&amp;mmm_fo=1");
       document.write ("'><\/scr"+"ipt>");
-      //]]>--></script><noscript><a href='http://ad.nciku.com/www/delivery/ck.php?n=ab603491&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='http://ad.nciku.com/www/delivery/avw.php?zoneid=14&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=ab603491' border='0' alt='' /></a></noscript>
-    
-    
-  </div>
-  
-  
-  
-  
-  
-  <div class="ad_flag">
-    <ul>
-      <li><a href="http://hi.nciku.com" target="_blank" >Meet the nciku Community!</a></li>
-      <li><a href="http://blog.nciku.com/blog/en/?p=1440" target="_blank" >nciku Team's choice !</a></li>
+                                                        //]]>--></script><noscript><a href='http://ad.nciku.com/www/delivery/ck.php?n=ab603491&amp;cb=INSERT_RANDOM_NUMBER_HERE' target='_blank'><img src='http://ad.nciku.com/www/delivery/avw.php?zoneid=14&amp;cb=INSERT_RANDOM_NUMBER_HERE&amp;n=ab603491' border='0' alt='' /></a></noscript>
+                                                        
+                                                        
+                                                        </div>
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        
+                                                        <div class="ad_flag">
+                                                        <ul>
+                                                        <li><a href="http://hi.nciku.com" target="_blank" >Meet the nciku Community!</a></li>
+                                                        <li><a href="http://blog.nciku.com/blog/en/?p=1440" target="_blank" >nciku Team's choice !</a></li>
     </ul>	
   </div>
   
@@ -1070,9 +1070,35 @@ _bindEvent("http://www.nciku.com");
   </html>
 HTML
 
+class Array
+  # Input:  [1,2,3,4,5]
+  # Output: [[1, 2], [2, 3], [3, 4], [4, 5]]
+  def overlap_pairs
+    second = self.dup.drop(1)
+    self.each_with_index.inject([]) {|acc,(item,i)|
+      acc << [item,second[i]]  unless second[i].nil?
+      acc
+    }
+  end
+end
+
 require 'nokogiri'
-css = "table#Table1 table[width = '680']"
-Nokogiri::HTML(html).css(css).each do |n|
-  puts n
-  puts "========================"
+parent_selector = "div.examples_box > dl"
+cn_selector     = "//dt/span[1]"
+en_class        = "tc_sub"
+en_selector     = "//dd/span[@class='#{en_class}']"
+main_node       = Nokogiri::HTML(html).css(parent_selector) # Returns a single node
+
+# CSS selector:   Returns the tags in the order they are specified
+# XPath selector: Return the tags in the order they appear in the document (that's what we want here).
+# Source:         http://stackoverflow.com/questions/5825136/nokogiri-and-finding-element-by-name/5845985#5845985
+target_nodes = main_node.search("#{cn_selector} | #{en_selector}").to_a # Nokogiri::XML::NodeSet => array
+
+# Only match text that has a translation, and vice versa.
+sentence_pairs = target_nodes.overlap_pairs.select {|(node_1,node_2)| node_1['class'] != en_class and node_2['class'] == en_class }
+sentence_pairs.each do |(cn_node,en_node)|
+  cn = cn_node.text.strip
+  # http://stackoverflow.com/questions/1512850/grabbing-text-between-all-tags-in-nokogiri
+  en = en_node.xpath('text()').text.strip
+  p [cn,en]
 end
