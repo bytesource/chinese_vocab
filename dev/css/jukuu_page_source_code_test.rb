@@ -283,6 +283,7 @@ parent_selector = "table#Table1 table[width = '680']"
 cn_selector     = "//tr[@class='c']"
 en_class        = "e"
 en_selector     = "//tr[@class='#{en_class}']"
+select_pair     = lambda {|node_1,node_2| node_1['class'] == en_class and node_2['class'] != en_class }
 main_node       = Nokogiri::HTML(html).css(parent_selector) # Returns a single node
 
 # CSS selector:   Returns the tags in the order they are specified
@@ -290,10 +291,11 @@ main_node       = Nokogiri::HTML(html).css(parent_selector) # Returns a single n
 # Source:         http://stackoverflow.com/questions/5825136/nokogiri-and-finding-element-by-name/5845985#5845985
 target_nodes = main_node.search("#{cn_selector} | #{en_selector}").to_a # Nokogiri::XML::NodeSet => array
 
-# Only match text that has a translation, and vice versa.
-sentence_pairs = target_nodes.overlap_pairs.select {|(node_1,node_2)| node_1['class'] != en_class and node_2['class'] == en_class }
+# Only match text that also has a translation, and vice versa.
+sentence_pairs = target_nodes.overlap_pairs.select {|(node_1,node_2)| select_pair.call(node_1,node_2) }
+sentence_pairs = sentence_pairs.map {|(node1,node2)| [node2,node1] }
 sentence_pairs = sentence_pairs.map do |(cn_node,en_node)|
-  cn = cn_node.text.strip
+  cn = cn_node.css('td[2]').text.strip
 en = en_node
 if source == :jukuu
   en = en.css('td[2]').text.strip
@@ -304,3 +306,4 @@ end
 end
 
 p sentence_pairs
+p "Number of sentence pairs: #{sentence_pairs.size}."
