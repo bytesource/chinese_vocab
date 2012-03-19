@@ -7,7 +7,8 @@ require 'core_ext/array'
 module Chinese
   class Scraper
 
-    attr_reader :source, :word
+    attr_reader   :source, :word
+    attr_accessor :sentences
 
 
     Sources = {
@@ -29,23 +30,29 @@ module Chinese
         :text_sel    => "td[2]"}
     }
 
+    def option_specs
+      {:source =>  {:validate  => lambda {|value| Sources.keys.include?(value) } ,
+                    :default   => :nciku},
+       :size   =>  {:validate  => lambda {|value| [:small, :middle, :large].include?(value) },
+                    :default   => :small}}
+    end
 
-    def initialize(source,word)
-      if source_valid?(source)
-        @source = source
-      else
-        raise ArgumentError, "'#{source}' is not a valid source. Please choose one of the following: #{default_sources.join(', ')}."
-      end
-      @word = word
+
+    def initialize(word, options={})
+      @source = validate_option(:source, options)
+      @word   = word
     end
 
 
     # Options:
     # size => [:small, average, large], default = average
-    def scrap_sentences
+    def sentences
+      return @sentences  unless @sentences.nil?
+
       source    = Sources[@source]
       url       = source[:url] + CGI.escape(@word)
       main_node = Nokogiri::HTML(open(url)).css(source[:parent_sel]) # Returns a single node.
+      return []  if main_node.to_a.empty?
 
       # CSS selector:   Returns the tags in the order they are specified
       # XPath selector: Return the tags in the order they appear in the document (that's what we want here).
@@ -63,15 +70,38 @@ module Chinese
       # (We always return an array of [cn_sentence,en_sentence] pairs.)
       sentence_pairs = sentence_pairs.map {|(node1,node2)| [node2,node1] }  unless source[:first] == :cn
       sentence_pairs = sentence_pairs.reduce([]) do |acc,(cn_node,en_node)|
-        cn   = cn_node.css(source[:text_sel]).text.strip
+        cn   = cn_node.css(source[:text_sel]).text.strip  # 'text' returns an empty string when 'css' returns an empty array.
         en   = en_node.css(source[:text_sel]).text.strip
         pair = [cn,en]
+        # Ensure that both the chinese and english selector have text.
+        # (sometimes they don't).
         acc << pair unless pair_with_empty_string?(pair)
         acc
       end
 
-      sentence_pairs
+      @sentences = sentence_pairs
+      @sentences
     end
+
+    def sentence(options={})
+      value = validate_option(:size, options)
+
+      # Scrap sentences from website first if necessary.
+      sentences         if sentences.nil?
+      # Return directly if no sentences were found.
+      return sentences  if sentences.empty?
+
+      case value
+      when :small
+        shortest_size(@sentences)
+      when :middle
+        average_size(@sentences)
+      when :large
+        longest_size(@sentences)
+      end
+    end
+
+
 
 
     # ===================
@@ -79,14 +109,25 @@ module Chinese
     # ===================
 
 
-    def default_sources
-      Sources.keys
+    # Handling options:
+    # Start
+
+    def validate_option(key, options)
+      # If key was not passed as a parameter, return its default value.
+      return option_specs[key][:default]  unless options.has_key?(key)
+
+      # Check validity of value
+      value = options[key]
+      test = option_specs[key][:validate].call(value)
+      if test
+        value
+      else
+        raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
+      end
     end
 
-    def source_valid?(source)
-      source = source.to_sym
-      default_sources.include?(source)
-    end
+    # Handling options
+    # End
 
     def pair_with_empty_string?(pair)
       pair[0].empty? || pair[1].empty?
@@ -110,7 +151,7 @@ module Chinese
     end
 
 
-  end
 
+  end
 end
 

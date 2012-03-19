@@ -5,6 +5,7 @@ $:.unshift File.expand_path('../../lib', __FILE__)
 require 'rspec'
 require 'csv'
 require 'chinese/scraper'
+require 'chinese/compacter'
 require 'chinese/hsk'
 
 
