@@ -14,13 +14,13 @@ sentences = [['我打他。', 'tag'],                #  我，打，他
              ['钱越来越多。', 'tag']]            #                ，越来越
 # ------------------------------------------------------------
 
-new_hsk = Chinese::HSK.new(1)
+new_vocab = Chinese::Vocab.new(1)
 
-words = Chinese::HSK.unique_words(words)
+words = Chinese::Vocab.unique_words(words)
 p words
 
 puts "With target word array:"
-with_target_words = new_hsk.add_target_words(sentences, words)
+with_target_words = new_vocab.add_target_words(sentences, words)
 
 p with_target_words
 # [[[["我", "打", "他"], "我打他。"], "tag"],
@@ -31,7 +31,7 @@ p with_target_words
 puts
 
 puts "Sorted by unique word count:"
-sorted_by_unique_word_count = new_hsk.sort_by_unique_word_count(with_target_words)
+sorted_by_unique_word_count = new_vocab.sort_by_unique_word_count(with_target_words)
 
 p sorted_by_unique_word_count
 # [[[["越 来越"], "钱越来越多。"], "tag"],
@@ -43,7 +43,7 @@ puts
 
 
 puts "Add tag:"
-sorted_with_tag = new_hsk.add_word_count_tag(sorted_by_unique_word_count)
+sorted_with_tag = new_vocab.add_word_count_tag(sorted_by_unique_word_count)
 
 p sorted_with_tag
 # [[[["越 来越"], "钱越来越多。"], "tag", "unique_1"],
@@ -54,7 +54,7 @@ p sorted_with_tag
 puts
 
 puts "Minimum necessary sentences:"
-minimum_sentences = new_hsk.minimum_necessary_sentences(sorted_with_tag, words)
+minimum_sentences = new_vocab.minimum_necessary_sentences(sorted_with_tag, words)
 
 p minimum_sentences
 # [[[["我", "打", "他"], "我打他。"], "tag", "unique_3"],
@@ -63,7 +63,7 @@ p minimum_sentences
 puts
 
 puts "Remove unique words arrays:"
-without_unique_word_arrays = new_hsk.remove_words_array(minimum_sentences)
+without_unique_word_arrays = new_vocab.remove_words_array(minimum_sentences)
 
 p without_unique_word_arrays
 # [["我打他。", "tag", "unique_3"],
@@ -71,10 +71,10 @@ p without_unique_word_arrays
 #  ["钱越来越多。", "tag", "unique_1"]]
 puts
 
-test_result = new_hsk.contains_all_unique_words?(without_unique_word_arrays, words)
+test_result = new_vocab.contains_all_unique_words?(without_unique_word_arrays, words)
 puts "Contains all unique words? => #{test_result}."
 
 
 puts "To file:"
-new_hsk.to_file('chinese_test.txt', without_unique_word_arrays, :col_sep => '|')
+new_vocab.to_file('chinese_test.txt', without_unique_word_arrays, :col_sep => '|')
 

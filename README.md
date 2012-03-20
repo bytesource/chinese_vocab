@@ -1,9 +1,9 @@
-# Chinese::HSK
+# Chinese::Vocab
 
-Chinese::HSK selects the minimum number of sentences necessary to learn all Chinese words
+Chinese::Vocab selects the minimum number of sentences necessary to learn all Chinese words
 from a set of Chinese sentences, given a set of Chinese words.
 
-Note: Chinese::HSK is functional but I haven't cleaned up the gem structure yet.
+Note: Chinese::Vocab is functional but I haven't cleaned up the gem structure yet.
 
 ## Installation
 

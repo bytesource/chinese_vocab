@@ -11,22 +11,22 @@ require 'spec_helper'
 # -- add method to add translation and pinyin to a word (no sentence)
 # -- add method #unique_characters
 
-describe Chinese::HSK do
+describe Chinese::Vocab do
 
-  let(:hsk) {described_class.new(1)}
+  let(:vocab) {described_class.new(1)}
 
   context :add_sentences_from do
 
-    word_array   = CSV.read('spec/data/hsk_missing_words.csv', :encoding => 'utf-8')
-    raw_words    = Chinese::HSK.extract_column(word_array, 1)
-    unique_words = Chinese::HSK.unique_words(raw_words).take(10) << "rohlfing"
+    word_array   = CSV.read('spec/data/vocab_missing_words.csv', :encoding => 'utf-8')
+    raw_words    = Chinese::Vocab.extract_column(word_array, 1)
+    unique_words = Chinese::Vocab.unique_words(raw_words).take(10) << "rohlfing"
 
     it "should download a sentence for every word" do
 
-      # sentences = hsk.add_sentences(unique_words, :nciku)
-      sentences = hsk.add_sentences(unique_words, :jukuu)
+      # sentences = vocab.add_sentences(unique_words, :nciku)
+      sentences = vocab.add_sentences(unique_words, :jukuu)
       p sentences
-      hsk.not_found.should == ['rohlfing']
+      vocab.not_found.should == ['rohlfing']
       # [["驮", "驮运曾在沙漠地区被广泛使用。", "tuó yùn céng zài shā mò dì qū bèi guăng fàn shĭ yòng 。",
       #   "Transferring goods by animals was once popular in the desert."],
       #   ["袄", "我扯了件夹袄披上，眼睛又定格在那厚厚的日记上。",
@@ -65,9 +65,9 @@ describe Chinese::HSK do
 
       it "should work correctly" do
 
-        hsk.include_every_char?("他们","他工作很忙").should be_false
-        hsk.include_every_char?("越。。。 来越。。。","他工作很忙").should be_false
-        hsk.include_every_char?("越。。。 来越。。。","他工作越来越忙").should be_true
+        vocab.include_every_char?("他们","他工作很忙").should be_false
+        vocab.include_every_char?("越。。。 来越。。。","他工作很忙").should be_false
+        vocab.include_every_char?("越。。。 来越。。。","他工作越来越忙").should be_true
       end
 
     end
@@ -76,21 +76,21 @@ describe Chinese::HSK do
 
       it "should return the minimum amount of sentences to cover all words" do
 
-        words = Chinese::HSK.unique_words(sample_words)
+        words = Chinese::Vocab.unique_words(sample_words)
 
-        with_target_words           = hsk.add_target_words_with_threads(sentences, words)
-        sorted_by_unique_word_count = hsk.sort_by_unique_word_count(with_target_words)
-        # sorted_with_tag             = hsk.add_word_count_tag(sorted_by_unique_word_count)
-        sorted_with_tag             = hsk.add_word_list_and_count_tags(sorted_by_unique_word_count)
-        minimum_sentences           = hsk.minimum_necessary_sentences(sorted_with_tag, words)
+        with_target_words           = vocab.add_target_words_with_threads(sentences, words)
+        sorted_by_unique_word_count = vocab.sort_by_unique_word_count(with_target_words)
+        # sorted_with_tag             = vocab.add_word_count_tag(sorted_by_unique_word_count)
+        sorted_with_tag             = vocab.add_word_list_and_count_tags(sorted_by_unique_word_count)
+        minimum_sentences           = vocab.minimum_necessary_sentences(sorted_with_tag, words)
         # [[[["我", "打"], "我打他。"], "tag", "unique_2", "[我] [打]"],
         #  [[["谁"], "他打谁？"], "tag", "unique_2", "[打] [谁]"],
         #  [[["他们", "越 来越"], "他们钱越来越多。"], "tag", "unique_2", "[他们] [越 来越]"]]
-        without_unique_word_arrays  = hsk.remove_words_array(minimum_sentences)
+        without_unique_word_arrays  = vocab.remove_words_array(minimum_sentences)
         # [["我打他。", "tag", "unique_2", "[我] [打]"],
         #  ["他打谁？", "tag", "unique_2", "[打] [谁]"],
         #  ["他们钱越来越多。", "tag", "unique_2", "[他们] [越 来越]"]]
-        test_result                 = hsk.contains_all_unique_words?(without_unique_word_arrays, words)
+        test_result                 = vocab.contains_all_unique_words?(without_unique_word_arrays, words)
         test_result.should be_true
       end
     end

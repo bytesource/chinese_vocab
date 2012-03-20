@@ -8,7 +8,7 @@ require 'cgi'
 require 'open-uri'
 require 'nokogiri'
 
-class HSK
+class Vocab
   attr_reader :data
 
 
@@ -224,11 +224,11 @@ end
 
 
 require 'csv'
-raw_data = CSV.read('../spec/data/hsk.csv', :col_sep => '|', :encoding => 'utf-8')
+raw_data = CSV.read('../spec/data/vocab.csv', :col_sep => '|', :encoding => 'utf-8')
 puts "Raw data, size: #{raw_data.size}"
 p raw_data.take(2)
 
-hsk = HSK.new(raw_data)
+vocab = Vocab.new(raw_data)
 
 
 
@@ -241,30 +241,30 @@ hsk = HSK.new(raw_data)
 #                6 => :meaning,
 #                7 => :tags)
 
-no_tags = hsk.rows_with_empty_col(7)
+no_tags = vocab.rows_with_empty_col(7)
 puts "No tags: #{no_tags.size}."
 # No tags: 664.
-hsk.to_file('no_tags', no_tags, :col_sep => '|')
+vocab.to_file('no_tags', no_tags, :col_sep => '|')
 
-# hsk.add_tags(4, 7, [lambda {|word| if word.strip.size == 4 and !word.strip.match(/\s/) then "ideom" else nil end}])
+# vocab.add_tags(4, 7, [lambda {|word| if word.strip.size == 4 and !word.strip.match(/\s/) then "ideom" else nil end}])
 
-no_tags = hsk.rows_with_empty_col(7)
+no_tags = vocab.rows_with_empty_col(7)
 puts "No tags: #{no_tags.size}."
 # No tags: 492.
 
-# p hsk.unique_words(7).keys
+# p vocab.unique_words(7).keys
 
-hsk.replace_words(7,
+vocab.replace_words(7,
                   "pref" => "prefix",
                   "aux"  => "auxiliary",
                   "ono"  => "onomatope")
 
-p hsk.unique_words(7).keys
+p vocab.unique_words(7).keys
 # ["interjection", "particle", "adjective", "verb", "noun", "number",
 #  "measure_word", "preposition", "adverb", "auxiliary", "pronoun", "conjugate", "prefix", "onomatope", "suffix"]
 
-duplicates       = hsk.duplicate_words
-merged           = hsk.merge_duplicate_words([7])
+duplicates       = vocab.duplicate_words
+merged           = vocab.merge_duplicate_words([7])
 
 
 def check_merged_count(raw_data, duplicates, merged)
@@ -290,49 +290,49 @@ former_duplicates = merged.select {|row|
   duplicates.include?(word)
 }
 p former_duplicates.take(2)
-# [["hsk_1", "2", "啊", "啊", "a", "ah", ["interjection", "particle"]],
-#  ["hsk_1", "141", "得", "得", "děi", "have to; be sure to", ["verb", "aux"]]]
+# [["vocab_1", "2", "啊", "啊", "a", "ah", ["interjection", "particle"]],
+#  ["vocab_1", "141", "得", "得", "děi", "have to; be sure to", ["verb", "aux"]]]
 p former_duplicates.size
 # => 189
 
 
-with_merged_cols = hsk.merge_cols([1], 7)
+with_merged_cols = vocab.merge_cols([1], 7)
 p with_merged_cols.take(2)
-# [["hsk_1", "1", "啊", "啊", "ā", "ah", ["interjection", "hsk_1"]],
-#  ["hsk_1", "2", "啊", "啊", "a", "ah", ["interjection", "particle", "hsk_1"]]]
+# [["vocab_1", "1", "啊", "啊", "ā", "ah", ["interjection", "vocab_1"]],
+#  ["vocab_1", "2", "啊", "啊", "a", "ah", ["interjection", "particle", "vocab_1"]]]
 
-hsk.to_file("hsk_computer_edited", hsk.data, :col_sep => '|')
+vocab.to_file("vocab_computer_edited", vocab.data, :col_sep => '|')
 
 
 
 # scraping
 
-test_data = CSV.read('../spec/data/hsk_mini.csv', :encoding => 'utf-8')
+test_data = CSV.read('../spec/data/vocab_mini.csv', :encoding => 'utf-8')
 
-hsk2 = HSK.new(test_data)
-# hsk2.add_sentences_from('http://www.nciku.com/search/all/examples/{}', 4,
+vocab2 = Vocab.new(test_data)
+# vocab2.add_sentences_from('http://www.nciku.com/search/all/examples/{}', 4,
 #                    :parent_css => 'div.examples_box > dl',
 #                    #:sentence_css  => 'dt > span',
 #                    :sentence_css  => '.pinyin',
 #                    :translation_css => '.tc_sub')
-# p hsk2.data
+# p vocab2.data
 
 
-# 20000 HSK sentences data
+# 20000 Vocab sentences data
 
 require 'csv'
 
-# hsk_20000 = CSV.read('../HSK/Word Lists/Old HSK Word Lists/HSK 20000 sentences deck/edit_with_ruby/hsk_facts.txt',
+# vocab_20000 = CSV.read('../Vocab/Word Lists/Old Vocab Word Lists/Vocab 20000 sentences deck/edit_with_ruby/vocab_facts.txt',
 #                :encoding => 'utf-8', :col_sep => '|')
-# p hsk_20000.take(2)
-# [["他感冒了。", "He caught a cold.", "tā gǎn mào le。", "HSK1-limited1-part1"],
-#  ["不用麻烦了。", "Don't bother.", "bù yòng má fan le。", "HSK1-limited1-part1"]]
+# p vocab_20000.take(2)
+# [["他感冒了。", "He caught a cold.", "tā gǎn mào le。", "Vocab1-limited1-part1"],
+#  ["不用麻烦了。", "Don't bother.", "bù yòng má fan le。", "Vocab1-limited1-part1"]]
 
-unique_words = hsk.data.map {|row| row[3]}.uniq
+unique_words = vocab.data.map {|row| row[3]}.uniq
 p unique_words.take(10)
 
 module Chinese
-  class HSK
+  class Vocab
     attr_reader :col
 
     def initialize(sentence_col=1)
@@ -560,13 +560,13 @@ sentences = [['我打他。', 'tag'],                #  我，打，他
              ['钱越来越多。', 'tag']]            #                ，越来越
 # ------------------------------------------------------------
 
-new_hsk = Chinese::HSK.new(1)
+new_vocab = Chinese::Vocab.new(1)
 
-words = Chinese::HSK.unique_words(words)
+words = Chinese::Vocab.unique_words(words)
 p words
 
 puts "With target word array:"
-with_target_words = new_hsk.add_target_words(sentences, words)
+with_target_words = new_vocab.add_target_words(sentences, words)
 
 p with_target_words
 # [[[["我", "打", "他"], "我打他。"], "tag"],
@@ -577,7 +577,7 @@ p with_target_words
 puts
 
 puts "Sorted by unique word count:"
-sorted_by_unique_word_count = new_hsk.sort_by_unique_word_count(with_target_words)
+sorted_by_unique_word_count = new_vocab.sort_by_unique_word_count(with_target_words)
 
 p sorted_by_unique_word_count
 # [[[["越 来越"], "钱越来越多。"], "tag"],
@@ -589,7 +589,7 @@ puts
 
 
 puts "Add tag:"
-sorted_with_tag = new_hsk.add_word_count_tag(sorted_by_unique_word_count)
+sorted_with_tag = new_vocab.add_word_count_tag(sorted_by_unique_word_count)
 
 p sorted_with_tag
 # [[[["越 来越"], "钱越来越多。"], "tag", "unique_1"],
@@ -600,7 +600,7 @@ p sorted_with_tag
 puts
 
 puts "Minimum necessary sentences:"
-minimum_sentences = new_hsk.minimum_necessary_sentences(sorted_with_tag, words)
+minimum_sentences = new_vocab.minimum_necessary_sentences(sorted_with_tag, words)
 
 p minimum_sentences
 # [[[["我", "打", "他"], "我打他。"], "tag", "unique_3"],
@@ -609,7 +609,7 @@ p minimum_sentences
 puts
 
 puts "Remove unique words arrays:"
-without_unique_word_arrays = new_hsk.remove_words_array(minimum_sentences)
+without_unique_word_arrays = new_vocab.remove_words_array(minimum_sentences)
 
 p without_unique_word_arrays
 # [["我打他。", "tag", "unique_3"],
@@ -617,12 +617,12 @@ p without_unique_word_arrays
 #  ["钱越来越多。", "tag", "unique_1"]]
 puts
 
-test_result = new_hsk.contains_all_unique_words?(without_unique_word_arrays, words)
+test_result = new_vocab.contains_all_unique_words?(without_unique_word_arrays, words)
 puts "Contains all unique words? => #{test_result}."
 
 
 puts "To file:"
-new_hsk.to_file('chinese_test.txt', without_unique_word_arrays, :col_sep => '|')
+new_vocab.to_file('chinese_test.txt', without_unique_word_arrays, :col_sep => '|')
 
 
 # puts
@@ -640,23 +640,23 @@ new_hsk.to_file('chinese_test.txt', without_unique_word_arrays, :col_sep => '|')
 # end
 #
 # time {
-#   unique_words_source = CSV.read('./data/hsk_unique_words_source.csv', :encoding => 'utf-8', :col_sep => ',')
-#   word_col            = Chinese::HSK.extract_column(unique_words_source, 4)
-#   unique_words        = Chinese::HSK.unique_words(word_col)
+#   unique_words_source = CSV.read('./data/vocab_unique_words_source.csv', :encoding => 'utf-8', :col_sep => ',')
+#   word_col            = Chinese::Vocab.extract_column(unique_words_source, 4)
+#   unique_words        = Chinese::Vocab.unique_words(word_col)
 #
-#   data = CSV.read('./data/hsk_20000_chin_engl_pinyin.csv', :encoding => 'utf-8', :col_sep => '|')
+#   data = CSV.read('./data/vocab_20000_chin_engl_pinyin.csv', :encoding => 'utf-8', :col_sep => '|')
 #
-#   hsk = Chinese::HSK.new(1)
+#   vocab = Chinese::Vocab.new(1)
 #
-#   with_target_words           = hsk.add_target_words_with_threads(data, unique_words)
-#   sorted_by_unique_word_count = hsk.sort_by_unique_word_count(with_target_words)
-#   sorted_with_tag             = hsk.add_word_count_tag(sorted_by_unique_word_count)
-#   minimum_sentences           = hsk.minimum_necessary_sentences(sorted_with_tag, words)
-#   without_unique_word_arrays  = hsk.remove_words_array(minimum_sentences)
-#   hsk.to_file('hsk_20000_min_sentences.txt', without_unique_word_arrays, :col_sep => '|')
+#   with_target_words           = vocab.add_target_words_with_threads(data, unique_words)
+#   sorted_by_unique_word_count = vocab.sort_by_unique_word_count(with_target_words)
+#   sorted_with_tag             = vocab.add_word_count_tag(sorted_by_unique_word_count)
+#   minimum_sentences           = vocab.minimum_necessary_sentences(sorted_with_tag, words)
+#   without_unique_word_arrays  = vocab.remove_words_array(minimum_sentences)
+#   vocab.to_file('vocab_20000_min_sentences.txt', without_unique_word_arrays, :col_sep => '|')
 #
 #
-#   test_result = new_hsk.contains_all_unique_words?(without_unique_word_arrays, words)
+#   test_result = new_vocab.contains_all_unique_words?(without_unique_word_arrays, words)
 #   puts "Contains all unique words? => #{test_result}."
 # }
 #

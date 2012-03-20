@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe Chinese::Compacter do
+describe Chinese::Vocab do
 
   words = ["我", "打", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以为。。。"]
 
