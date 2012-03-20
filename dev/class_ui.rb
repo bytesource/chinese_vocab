@@ -1,5 +1,3 @@
-vocab_source = CSV.read('/path/to/words.csv',  :encoding => 'utf-8')
-
 Chinese::Vocab.words('/path/to/words.csv', 1)
 # Uses :encoding => 'utf-8' internally
 # Returns a string of characters
@@ -8,7 +6,8 @@ Chinese::Vocab.words('/path/to/words.csv', 1)
 # @sentences         = []
 # @unique_characters = []
 
-sentences = Chinese::Vocab.new do |words|
-  words.miniumum_sentences(:source => 'nciku')
+# words = String of not yet cleaned words
+sentences = Chinese::Vocab(words, :compress => true).new do |words|
+  words.miniumum_sentences(:source => 'nciku', :size => :small, :with_pinyin => true)
   words.to_cvs('path/to/file.csv', :col_sep => '|')
 end
