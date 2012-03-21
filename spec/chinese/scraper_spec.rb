@@ -86,6 +86,7 @@ describe Chinese::Scraper do
         let(:nciku) { described_class.new("#$@", :source => :nciku )}
 
         specify { nciku.sentences.should be_empty }
+        specify { nciku.sentence.should be_empty }   # sentence
       end
 
       describe "Scraping the jukuu website" do

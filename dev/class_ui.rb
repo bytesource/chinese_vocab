@@ -8,6 +8,7 @@ Chinese::Vocab.words('/path/to/words.csv', 1)
 
 # words = String of not yet cleaned words
 sentences = Chinese::Vocab(words, :compress => true).new do |words|
-  words.miniumum_sentences(:source => 'nciku', :size => :small, :with_pinyin => true)
+  words.sentences(:source => 'nciku', :size => :small, :with_pinyin => true)  # alias: minimum_sentences
+  words.min_sentences(:source => 'nciku', :size => :small, :with_pinyin => true)  # alias: minimum_sentences
   words.to_cvs('path/to/file.csv', :col_sep => '|')
 end

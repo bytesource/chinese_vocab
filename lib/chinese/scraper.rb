@@ -2,10 +2,12 @@
 require 'cgi'
 require 'open-uri'
 require 'nokogiri'
-require 'core_ext/array'
+require 'chinese/core_ext/array'
+require 'chinese/modules/options'
 
 module Chinese
   class Scraper
+    include Options
 
     attr_reader   :source, :word
     attr_accessor :sentences
@@ -30,16 +32,12 @@ module Chinese
         :text_sel    => "td[2]"}
     }
 
-    def option_specs
-      {:source =>  {:validate  => lambda {|value| Sources.keys.include?(value) } ,
-                    :default   => :nciku},
-       :size   =>  {:validate  => lambda {|value| [:small, :middle, :large].include?(value) },
-                    :default   => :small}}
-    end
+    Validations =  {:source =>  lambda {|value| Sources.keys.include?(value) },
+                    :size   =>  lambda {|value| [:small, :middle, :large].include?(value) }}
 
 
     def initialize(word, options={})
-      @source = validate_option(:source, options)
+      @source = validate(:source, options, Validations[:source], :nciku)
       @word   = word
     end
 
@@ -84,7 +82,7 @@ module Chinese
     end
 
     def sentence(options={})
-      value = validate_option(:size, options)
+      value = validate(:size, options, Validations[:size], :small)
 
       # Scrap sentences from website first if necessary.
       sentences         if sentences.nil?
@@ -107,27 +105,6 @@ module Chinese
     # ===================
     # Helper functions
     # ===================
-
-
-    # Handling options:
-    # Start
-
-    def validate_option(key, options)
-      # If key was not passed as a parameter, return its default value.
-      return option_specs[key][:default]  unless options.has_key?(key)
-
-      # Check validity of value
-      value = options[key]
-      test = option_specs[key][:validate].call(value)
-      if test
-        value
-      else
-        raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
-      end
-    end
-
-    # Handling options
-    # End
 
     def pair_with_empty_string?(pair)
       pair[0].empty? || pair[1].empty?

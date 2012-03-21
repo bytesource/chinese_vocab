@@ -4,7 +4,8 @@ require 'spec_helper'
 
 describe Chinese::Vocab do
 
-  words = ["我", "打", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。"]
+  # NOTE:  "浮鞋" is only found on jukuu.
+  words = ["我", "打", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
 
   sentences = ['我打他。',
                '他打我好疼。',
@@ -30,7 +31,7 @@ describe Chinese::Vocab do
 
     context :words do
 
-      specify {vocab.words('data/old_hsk_short.csv', 4).should == ["座右铭", "座右铭"] }
+      specify {vocab.parse_words('data/old_hsk_short.csv', 4).should == ["座右铭", "座右铭"] }
     end
 
     context :within_range? do
@@ -45,7 +46,7 @@ describe Chinese::Vocab do
   end
 
   context "Instance methods" do
-    let(:vocab) {described_class.new}
+    let(:vocab) {described_class.new(words)}
 
     context :remove_parens do
 
@@ -55,18 +56,39 @@ describe Chinese::Vocab do
       specify {vocab.remove_parens("除了。。。以外（之外）").should == "除了。。。以外" }
     end
 
-    context :is_boolean? do
+    context :edit_vocab do
 
-      specify {vocab.is_boolean?(true).should be_true }
-      specify {vocab.is_boolean?(false).should be_true }
-      specify {vocab.is_boolean?('true').should be_false }
+      passed_to_initialize = ["除了。。以外(之外)", "除了。。。以外（之外）", "U盘", "U盘"]
+
+      # Edit and remove duplicates
+      specify {vocab.edit_vocab(passed_to_initialize).should == ["除了 以外", "U盘"] }
     end
 
-    context :clean_words do
+    context :min_sentences do
 
-      passed_to_initialize = ["除了。。以外(之外)", "除了。。。以外（之外）"]
+      word_list = ["除了。。。 以外。。。", "浮鞋"]
+      let(:new_vocab) { described_class.new(word_list) }
+      specify { new_vocab.min_sentences(:with_pinyin => true).should == nil }
+      # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
+      #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le 。",
+      #   "I have no change except for this high denomination banknote."]]
 
-      specify {vocab.clean_words(passed_to_initialize).should == ["除了。。以外", "除了。。。以外"] }
+    end
+
+    context :alternate_source do
+
+      specify {vocab.alternate_source([:a, :b], :b).should == :a }
+      specify {vocab.alternate_source([:a, :b], :a).should == :b }
+    end
+
+    context :is_unicode? do
+
+      ascii   = ["hello, ....", "This is perfect!"]
+      chinese = ["U盘", "X光", "周易衡"]
+
+      specify { ascii.all? {|word| vocab.is_unicode?(word) }.should be_false }
+      specify { chinese.all? {|word| vocab.is_unicode?(word) }.should be_true }
+
     end
 
     context :distinct_words do

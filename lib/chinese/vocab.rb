@@ -5,22 +5,28 @@ require 'nokogiri'
 require 'cgi'
 require 'csv'
 require 'string_to_pinyin'
+require 'chinese/scraper'
+require 'chinese/modules/options'
 
 module Chinese
   class Vocab
-    attr_reader :words
+    include Options
+
+    attr_reader :words, :compress, :chinese, :not_found
+
+    Validations = {:compress    => lambda {|value| is_boolean?(value) },
+                   :with_pinyin => lambda {|value| is_boolean?(value) }}
 
 
-    def option_specs
-      {:compress => {:validate => lambda {|value| is_boolean?(value) },
-                     :default  => true}}
+    def initialize(word_array, options={})
+      # TODO: extend 'edit_vocab to also handle English text properly (e.g. remove 'somebody', 'someone', 'so', 'to do sth' etc)
+      @compress = validate(:compress, options, Validations[:compress], false)
+      @words    = edit_vocab(word_array)
+      @chinese  = is_unicode?(@words[0])
+      @not_found     = []
+      @sentences     = []
+      @min_sentences = []
     end
-
-
-    # def initialize(word_array, options)
-    #   @words = clean_words(word_array)
-
-    # end
 
 
     # Input:
@@ -29,7 +35,7 @@ module Chinese
     # options    : Options used by the CSV class
     # Output:
     # Array of strings, where each string is a word from the CSV file.
-    def self.words(path_to_csv, word_col, options={})
+    def self.parse_words(path_to_csv, word_col, options={})
       # Enforced options:
       # encoding: utf-8 (necessary for parsing Chinese characters)
       # skip_blanks: true
@@ -49,6 +55,50 @@ module Chinese
       }
     end
 
+
+    def min_sentences(options={})
+      return @sentences  unless @sentences.empty?
+
+      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], false)
+
+      queue     = Queue.new
+      semaphore = Mutex.new
+      @words.each {|word| queue << word }
+      result = []
+
+      5.times.map {
+        Thread.new do
+
+          while(!queue.empty?) do
+            word = queue.pop
+
+            scraper = Scraper.new(word, options)
+            sentence_pair = scraper.sentence(options)
+
+            # If word not found try again using the alternate download source:
+            alternate = alternate_source(Scraper::Sources.keys, scraper.source)
+            sentence_pair = scraper.sentence(:source => alternate)   if sentence_pair.empty?
+
+
+            if sentence_pair.empty?
+              @not_found << word
+            else
+              chinese, english = sentence_pair
+              pinyin           = chinese.to_pinyin   if with_pinyin
+              # 'pinyin' will be nil if not set, so we need to remove it here.
+              local_result = [word, chinese, pinyin, english].compact
+
+              semaphore.synchronize { result << local_result }
+            end
+          end
+        end
+      }.each {|thread| thread.join }
+
+      @sentences = result
+      @sentences
+    end
+
+
     # Helper functions
     # -----------------
 
@@ -63,9 +113,22 @@ module Chinese
       !!value == value
     end
 
-    # Remove all parens and all data in between.
-    def clean_words(word_array)
-      word_array.map {|word| remove_parens(word) }
+    # Remove all non-word characters
+    def edit_vocab(word_array)
+      word_array.map {|word|
+        edited = remove_parens(word)
+        distinct_words(edited).join(' ')
+      }.uniq
+    end
+
+    def is_unicode?(word)
+      # Remove all non-ascii and non-unicode word characters
+      word = distinct_words(word).join
+      # English text at this point only contains characters that are mathed by \w
+      # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
+      # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
+      char_arr = word.scan(/\w/)
+      char_arr.size < word.size
     end
 
     # Input:
@@ -74,6 +137,12 @@ module Chinese
     def self.within_range?(column, row)
       no_of_cols = row.size
       column >= 1 && column <= no_of_cols
+    end
+
+    def alternate_source(sources, selection)
+      sources = sources.dup
+      sources.delete(selection)
+      sources.pop
     end
 
     # Return true if every distince word (as defined by #distinct_words)
