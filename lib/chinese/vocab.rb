@@ -22,6 +22,7 @@ module Chinese
       # TODO: extend 'edit_vocab to also handle English text properly (e.g. remove 'somebody', 'someone', 'so', 'to do sth' etc)
       @compress = validate(:compress, options, Validations[:compress], false)
       @words    = edit_vocab(word_array)
+      @words    = remove_redundant_single_char_words(@words)  if @compress
       @chinese  = is_unicode?(@words[0])
       @not_found     = []
       @sentences     = []
@@ -56,8 +57,8 @@ module Chinese
     end
 
 
-    def min_sentences(options={})
-      return @sentences  unless @sentences.empty?
+    def sentences(options={})
+      # Always run this method.
 
       with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], false)
 
@@ -72,20 +73,21 @@ module Chinese
           while(!queue.empty?) do
             word = queue.pop
 
-            scraper = Scraper.new(word, options)
-            sentence_pair = scraper.sentence(options)
+            sentence_pair = Scraper.new(word, options).sentence(options)
 
-            # If word not found try again using the alternate download source:
-            alternate = alternate_source(Scraper::Sources.keys, scraper.source)
-            sentence_pair = scraper.sentence(:source => alternate)   if sentence_pair.empty?
+            # If a word was not found, try again using the alternate download source:
+            alternate     = alternate_source(Scraper::Sources.keys, options[:source])
+            options       = options.merge(:source => alternate)
+            sentence_pair = Scraper.new(word, options).sentence(options)  if sentence_pair.empty?
 
 
             if sentence_pair.empty?
               @not_found << word
             else
               chinese, english = sentence_pair
-              pinyin           = chinese.to_pinyin   if with_pinyin
-              # 'pinyin' will be nil if not set, so we need to remove it here.
+              pinyin = chinese.to_pinyin  if with_pinyin
+              # 'pinyin' will be nil if 'with_pinyin' is false.
+              # We remove those nil-entries with 'compact'.
               local_result = [word, chinese, pinyin, english].compact
 
               semaphore.synchronize { result << local_result }
@@ -94,8 +96,13 @@ module Chinese
         end
       }.each {|thread| thread.join }
 
-      @sentences = result
-      @sentences
+      @stored_sentences = result
+      @stored_sentences
+    end
+
+    def min_sentences(options = {})
+      # Always run this method.
+      sentences = sentences(options)
     end
 
 
@@ -121,6 +128,25 @@ module Chinese
       }.uniq
     end
 
+    # Input: ["看", "书", "看书"]
+    # Output: ["看书"]
+    def remove_redundant_single_char_words(words)
+      single_char_words, multi_char_words = words.partition {|word| word.length == 1 }
+      return single_char_words  if multi_char_words.empty?
+
+      non_redundant_single_char_words = single_char_words.reduce([]) do |acc, single_c|
+
+        already_found = multi_char_words.find do |multi_c|
+          multi_c.include?(single_c)
+        end
+        # Add single char word to array if it is not part of any of the multi char words.
+        acc << single_c  unless already_found
+        acc
+      end
+
+      non_redundant_single_char_words + multi_char_words
+    end
+
     def is_unicode?(word)
       # Remove all non-ascii and non-unicode word characters
       word = distinct_words(word).join
@@ -143,6 +169,15 @@ module Chinese
       sources = sources.dup
       sources.delete(selection)
       sources.pop
+    end
+
+    # Temporary use hash to faciliate further processing.
+    # Input: ["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]
+    # Output: {word: "浮鞋", sentence: ["舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]}
+    def to_temp_hash(arr)
+      word      = arr.shift
+      sentence = arr
+      {word: word, sentence: sentence}
     end
 
     # Return true if every distince word (as defined by #distinct_words)

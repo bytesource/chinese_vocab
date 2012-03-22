@@ -48,6 +48,13 @@ describe Chinese::Vocab do
   context "Instance methods" do
     let(:vocab) {described_class.new(words)}
 
+    context :remove_redundant_single_char_words do
+
+      edited_words = ["看书", "玩球","看","书","玩","球"]
+
+      specify { vocab.remove_redundant_single_char_words(edited_words).should == ["看书", "玩球"] }
+    end
+
     context :remove_parens do
 
       # Using ASCII parens
@@ -64,15 +71,31 @@ describe Chinese::Vocab do
       specify {vocab.edit_vocab(passed_to_initialize).should == ["除了 以外", "U盘"] }
     end
 
-    context :min_sentences do
+    context :sentences do
 
-      word_list = ["除了。。。 以外。。。", "浮鞋"]
+      word_list = ["浮鞋"]
       let(:new_vocab) { described_class.new(word_list) }
-      specify { new_vocab.min_sentences(:with_pinyin => true).should == nil }
-      # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
-      #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le 。",
-      #   "I have no change except for this high denomination banknote."]]
 
+      it "should scrap the sentence from the second download source if a word
+      was not found on the first one" do
+
+        # "浮鞋" is not found on the default download source (:nciku),
+        # but returns a result on the second one (:jukuu).
+        # Therefore the following must not return an empty array:
+        new_vocab.sentences(:with_pinyin => true).should ==
+          [["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]]
+        # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
+        #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le
+        #   "I have no change except for this high denomination banknote."]]
+      end
+    end
+
+    context :to_temp_hash do
+
+      input = ["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]
+
+      specify {vocab.to_temp_hash(input).should ==
+               {word: "浮鞋", sentence: ["舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]} }
     end
 
     context :alternate_source do
