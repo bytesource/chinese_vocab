@@ -20,3 +20,26 @@ module HelperMethods
 end
 
 
+class Array
+
+
+  # This does not work
+  def rec_sort
+     self.map do |x|
+      if x.kind_of?(Array)
+        x.rec_sort
+      else
+        [x]
+      end
+    end.sort_by {|x| x.length}
+  end
+
+  def array_of_arrays_equal?(arr)
+    with_sorted_items1 = self.map(&:sort)
+    with_sorted_items2 = arr.map(&:sort)
+    with_sorted_items1.sort == with_sorted_items2.sort
+  end
+end
+
+
+

@@ -83,20 +83,13 @@ describe Chinese::Vocab do
         # but returns a result on the second one (:jukuu).
         # Therefore the following must not return an empty array:
         new_vocab.sentences(:with_pinyin => true).should ==
-          [["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]]
+          [{:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"shé xíng fú xié", :english=>"flapper float shoe"}]
         # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
         #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le
         #   "I have no change except for this high denomination banknote."]]
       end
     end
 
-    context :to_temp_hash do
-
-      input = ["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]
-
-      specify {vocab.to_temp_hash(input).should ==
-               {word: "浮鞋", sentence: ["舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]} }
-    end
 
     context :alternate_source do
 
@@ -125,6 +118,42 @@ describe Chinese::Vocab do
 
       # word: "越 来越", sentence: '他们钱越来越多。'
       specify { vocab.include_every_char?(words[5], sentences[4]).should be_true }
+
+    end
+
+    # context :target_words_per_sentence do
+    #   sentence     = '除了饺子以外，我也很喜欢吃馒头'
+    #   target_words = ["我们","除了 以外","我","你","喜欢"]
+
+    #   specify { vocab.target_words_per_sentence(sentence, target_words).should == ["除了 以外", "我", "喜欢"] }
+    # end
+
+    context :add_target_words do
+
+      # @words = ["我", "打", "他", "他们", "谁", "越 来越", "除了 以外", "浮鞋"]
+
+      hash_array = [{word: "_", chinese: '除了饺子以外，我也很喜欢吃馒头', pinyin: '_', english: '_'},
+                    {word: "_", chinese: '钻井需要用浮鞋', pinyin: '_', english: '_'}]
+
+      specify { target_words = vocab.add_target_words(hash_array).map {|hash| hash[:target_words] }.
+                array_of_arrays_equal?([["除了 以外", "我"],["浮鞋"]]) }
+    end
+
+    context :sort_by_target_word_count do
+
+      with_target_words = [{word: "_", chinese: '1', pinyin: '_', english: '_', target_words: [1,2,3]},
+                           {word: "_", chinese: '12', pinyin: '_', english: '_', target_words: [1,2,3]},
+                           {word: "_", chinese: '123', pinyin: '_', english: '_', target_words: [1,2]},
+                           {word: "_", chinese: '1234', pinyin: '_', english: '_', target_words: [1,2]},
+                           {word: "_", chinese: '123456', pinyin: '_', english: '_', target_words: [1,2,3,4]} ]
+
+
+      specify { vocab.sort_by_target_word_count(with_target_words).should ==
+                [{word: "_", chinese: '123456', pinyin: '_', english: '_', target_words: [1,2,3,4]},
+                 {word: "_", chinese: '1', pinyin: '_', english: '_', target_words: [1,2,3]},
+                 {word: "_", chinese: '12', pinyin: '_', english: '_', target_words: [1,2,3]},
+                 {word: "_", chinese: '123', pinyin: '_', english: '_', target_words: [1,2]},
+                 {word: "_", chinese: '1234', pinyin: '_', english: '_', target_words: [1,2]}] }
 
     end
   end

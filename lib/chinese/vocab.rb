@@ -73,25 +73,9 @@ module Chinese
           while(!queue.empty?) do
             word = queue.pop
 
-            sentence_pair = Scraper.new(word, options).sentence(options)
+            local_result = select_sentence(word, options)
 
-            # If a word was not found, try again using the alternate download source:
-            alternate     = alternate_source(Scraper::Sources.keys, options[:source])
-            options       = options.merge(:source => alternate)
-            sentence_pair = Scraper.new(word, options).sentence(options)  if sentence_pair.empty?
-
-
-            if sentence_pair.empty?
-              @not_found << word
-            else
-              chinese, english = sentence_pair
-              pinyin = chinese.to_pinyin  if with_pinyin
-              # 'pinyin' will be nil if 'with_pinyin' is false.
-              # We remove those nil-entries with 'compact'.
-              local_result = [word, chinese, pinyin, english].compact
-
-              semaphore.synchronize { result << local_result }
-            end
+            semaphore.synchronize { result << local_result }
           end
         end
       }.each {|thread| thread.join }
@@ -101,8 +85,11 @@ module Chinese
     end
 
     def min_sentences(options = {})
+      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], false)
       # Always run this method.
-      sentences = sentences(options)
+      sentences                   = sentences(options)
+      with_target_words           = add_target_words(sentences)
+      sorted_by_target_word_count = sort_by_target_word_count(with_target_words)
     end
 
 
@@ -115,10 +102,12 @@ module Chinese
       word.gsub(/\(.*?\)/, '').gsub(/（.*?）/, '')
     end
 
+
     def is_boolean?(value)
       # Only true for either 'false' or 'true'
       !!value == value
     end
+
 
     # Remove all non-word characters
     def edit_vocab(word_array)
@@ -127,6 +116,7 @@ module Chinese
         distinct_words(edited).join(' ')
       }.uniq
     end
+
 
     # Input: ["看", "书", "看书"]
     # Output: ["看书"]
@@ -147,6 +137,73 @@ module Chinese
       non_redundant_single_char_words + multi_char_words
     end
 
+
+    def select_sentence(word, options)
+      sentence_pair = Scraper.new(word, options).sentence(options)
+
+      # If a word was not found, try again using the alternate download source:
+      alternate     = alternate_source(Scraper::Sources.keys, options[:source])
+      options       = options.merge(:source => alternate)
+      sentence_pair = Scraper.new(word, options).sentence(options)  if sentence_pair.empty?
+
+      if sentence_pair.empty?
+        @not_found << word
+      else
+        chinese, english = sentence_pair
+
+        result = Hash.new
+        result.merge!(word:    word)
+        result.merge!(chinese: chinese)
+        result.merge!(pinyin:  chinese.to_pinyin)  if options[:with_pinyin]
+        result.merge!(english: english)
+      end
+    end
+
+
+    def add_target_words(hash_array)
+      queue      = Queue.new
+      semaphore  = Mutex.new
+      result     = []
+      hash_array.each {|hash| queue << hash}
+
+      10.times.map {
+        Thread.new do
+
+          while(!queue.empty?)
+            row       = queue.pop
+            sentence  = row[:chinese]
+
+            target_words = target_words_per_sentence(sentence, @words)
+
+            semaphore.synchronize { result << row.merge(:target_words => target_words) }
+          end
+        end
+      }.map {|thread| thread.join}
+
+      result
+    end
+
+
+    def target_words_per_sentence(sentence, words)
+       words.select {|w| include_every_char?(w, sentence) }
+    end
+
+
+    def sort_by_target_word_count(with_target_words)
+      # First sort by size of unique word array (from large to short)
+      # If the unique word count is equal, sort by the length of the sentence (from small to large)
+      with_target_words.sort_by {|row|
+        [-row[:target_words].size, row[:chinese].size] }
+
+        #  The above is the same as:
+        #   with_target_words.sort {|a,b|
+        #     first = -(a[:target_words].size <=> b[:target_words].size)
+        #     first.nonzero? || (a[:chinese].size <=> b[:chinese].size) }
+    end
+
+
+
+
     def is_unicode?(word)
       # Remove all non-ascii and non-unicode word characters
       word = distinct_words(word).join
@@ -157,6 +214,7 @@ module Chinese
       char_arr.size < word.size
     end
 
+
     # Input:
     # column: word column number (counting from 1)
     # row   : Array of the processed CSV data that contains our word column.
@@ -165,20 +223,13 @@ module Chinese
       column >= 1 && column <= no_of_cols
     end
 
+
     def alternate_source(sources, selection)
       sources = sources.dup
       sources.delete(selection)
       sources.pop
     end
 
-    # Temporary use hash to faciliate further processing.
-    # Input: ["浮鞋", "舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]
-    # Output: {word: "浮鞋", sentence: ["舌型浮鞋", "shé xíng fú xié", "flapper float shoe"]}
-    def to_temp_hash(arr)
-      word      = arr.shift
-      sentence = arr
-      {word: word, sentence: sentence}
-    end
 
     # Return true if every distince word (as defined by #distinct_words)
     # can be found in the given sentence.
@@ -186,6 +237,7 @@ module Chinese
       characters = distinct_words(word)
       characters.all? {|char| sentence.include?(char) }
     end
+
 
     # Input: "除了。。。 以外。。。"
     # Outout: ["除了", "以外"]
