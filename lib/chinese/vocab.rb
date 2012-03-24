@@ -7,6 +7,7 @@ require 'csv'
 require 'string_to_pinyin'
 require 'chinese/scraper'
 require 'chinese/modules/options'
+require 'chinese/core_ext/hash'
 
 module Chinese
   class Vocab
@@ -84,12 +85,30 @@ module Chinese
       @stored_sentences
     end
 
+
+    # options - The Hash options used to refine the selection (default: {}):
+    #           :color  - The String color to restrict by (optional).
+    #           :weight - The Float weight to restrict by. The weight should
+    #                     be specified in grams (optional).
+
+    # Public: Select the minimum number of sentences necessary to cover all word characters.
+    #
+    # options - The Hash options used to refine the selection (default: {}):
+    #           :with_pinyin - The Boolean to decide if the pinyin representation of a Chinese sentence
+    #                          should be returned, too (default: true)
+    #
+    # Examples
+    #
+    #   min_sentenes(:pinyin => false)
+    #   #
+    #
+    # Returns an Array of Hash objects
     def min_sentences(options = {})
-      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], false)
+      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
       # Always run this method.
-      sentences                   = sentences(options)
-      with_target_words           = add_target_words(sentences)
-      sorted_by_target_word_count = sort_by_target_word_count(with_target_words)
+      sentences         = sentences(options)
+      minimum_sentences = select_minimum_sentences(sorted_by_target_word_count)
+      minimum_sentences.map { |row| row.delete_keys(:target_words, :words) }
     end
 
 
@@ -202,6 +221,49 @@ module Chinese
     end
 
 
+    def select_minimum_necessary_sentences(sentences)
+      with_target_words = add_target_words(sentences)
+      rows              = sort_by_target_word_count(with_target_words)
+
+      selected_rows   = []
+      unmatched_words = @words.dup
+      matched_words   = []
+
+      rows.each do |row|
+        words = row[:target_words].dup
+        # Delete all words from 'words' that have already been encoutered (and are included in 'matched_words').
+        words = words - matched_words
+
+        if words.size > 0  # Words that where not deleted above have to be part of 'unmatched_words'.
+          selected_rows << row  # Select this row.
+
+          # When a row is selected, its 'words' are no longer unmatched but matched.
+          unmatched_words = unmatched_words - words
+          matched_words   = matched_words + words
+        end
+      end
+      selected_rows
+    end
+
+
+    def contains_all_target_words?(selected_rows, sentence_key)
+
+      matched_words = @words.reduce([]) do |acc, word|
+
+        result = selected_rows.find do |row|
+          sentence = row[sentence_key]
+          include_every_char?(word, sentence)
+        end
+
+        if result
+          acc << word
+        end
+
+        acc
+      end
+
+      matched_words.size == @words.size
+    end
 
 
     def is_unicode?(word)

@@ -156,6 +156,44 @@ describe Chinese::Vocab do
                  {word: "_", chinese: '1234', pinyin: '_', english: '_', target_words: [1,2]}] }
 
     end
+
+    context :contains_all_target_words? do
+
+      obj  = described_class.new(["除了。。。以外", "浮鞋", "我们"])
+      arr1 =  [{word: "_", chinese: '除了饺子以外，我也很喜欢吃馒头', pinyin: '_', english: '_', target_words: []},
+               {word: "_", chinese: '我们不怕冷', pinyin: '_', english: '_', target_words: []} ]
+      arr2 = arr1.dup << {word: "_", chinese: '钻井需要用浮鞋', pinyin: '_', english: '_', target_words: []}
+
+
+      specify { obj.contains_all_target_words?(arr1, :chinese).should be_false }
+      specify { obj.contains_all_target_words?(arr2, :chinese).should be_true }
+    end
+
+    context :select_minimum_necessary_sentences do
+
+      obj = described_class.new(words, :compress => true)
+      s = obj.sentences
+      with_target_words = obj.add_target_words(s)
+      sorted_by_target_word_count = obj.sort_by_target_word_count(with_target_words)
+    # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
+    #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
+    #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
+    #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"", :target_words=>["浮鞋"]},
+    #  {:word=>"他们", :chinese=>"他们正忙着装修爱巢呢！", :english=>"", :target_words=>["他们"]},
+    #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :english=>"", :target_words=>["越 来越"]},
+    #  {:word=>"我", :chinese=>"我们两家是世交，他比我大，是我的世兄。", :english=>"", :target_words=>["我"]}]
+
+      specify { obj.select_minimum_necessary_sentences(s).size.should < s.size }
+
+      minimum_necessary_sentences = obj.select_minimum_necessary_sentences(s)
+      specify { obj.contains_all_target_words?(minimum_necessary_sentences, :chinese).should be_true }
+      # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
+      #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
+      #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
+      #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"", :target_words=>["浮鞋"]},
+      #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :english=>"", :target_words=>["越 来越"]}]
+
+    end
   end
 end
 
