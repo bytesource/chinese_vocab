@@ -56,6 +56,7 @@ module Chinese
       # XPath selector: Return the tags in the order they appear in the document (that's what we want here).
       # Source:         http://stackoverflow.com/questions/5825136/nokogiri-and-finding-element-by-name/5845985#5845985
       target_nodes = main_node.search("#{source[:cn_sel]} | #{source[:en_sel]}")
+      return [] if target_nodes.to_a.empty?
 
       # In order to make sure we only return text that also has a translation,
       # we need to first group each target node with Array#overlap_pairs like this:

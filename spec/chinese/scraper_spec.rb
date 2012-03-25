@@ -62,6 +62,14 @@ describe Chinese::Scraper do
       specify {scraper.sentence                   ==  ["一二","one-two"]}
 
     end
+
+    context :pair_with_empty_string?
+
+    scraper = described_class.new("豆浆", :source => :nciku )
+
+    specify { scraper.pair_with_empty_string?(["hello", "world"]).should be_false }
+    specify { scraper.pair_with_empty_string?(["", "world"]).should be_true }
+    specify { scraper.pair_with_empty_string?(["", ""]).should be_true }
   end
 
 

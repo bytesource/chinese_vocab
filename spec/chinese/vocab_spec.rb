@@ -71,6 +71,20 @@ describe Chinese::Vocab do
       specify {vocab.edit_vocab(passed_to_initialize).should == ["除了 以外", "U盘"] }
     end
 
+    context :select_sentence do
+
+      # Word not found online
+      specify do
+        vocab.select_sentence("罗飞科").should be_nil
+        vocab.not_found.include?("罗飞科").should be_true
+      end
+      specify do
+        vocab.select_sentence("浮鞋").should == {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"flapper float shoe"}
+        vocab.not_found.include?("浮鞋").should be_false
+        p vocab.with_pinyin
+      end
+    end
+
     context :sentences do
 
       word_list = ["浮鞋"]
@@ -82,12 +96,23 @@ describe Chinese::Vocab do
         # "浮鞋" is not found on the default download source (:nciku),
         # but returns a result on the second one (:jukuu).
         # Therefore the following must not return an empty array:
-        new_vocab.sentences(:with_pinyin => true).should ==
+        new_vocab.sentences.should ==
           [{:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"shé xíng fú xié", :english=>"flapper float shoe"}]
         # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
         #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le
         #   "I have no change except for this high denomination banknote."]]
       end
+
+      specify do
+        new_vocab.sentences.all? {|hash| hash.has_key?(:pinyin)}.should be_true
+        new_vocab.with_pinyin.should be_true
+      end
+      specify {new_vocab.sentences(:with_pinyin => true).all? {|hash| hash.has_key?(:pinyin)}.should be_true }
+      specify do
+        new_vocab.sentences(:with_pinyin => false).any? {|hash| hash.has_key?(:pinyin)}.should be_false
+        new_vocab.with_pinyin.should be_false
+      end
+
     end
 
 
@@ -175,6 +200,7 @@ describe Chinese::Vocab do
       s = obj.sentences
       with_target_words = obj.add_target_words(s)
       sorted_by_target_word_count = obj.sort_by_target_word_count(with_target_words)
+      # Replaced each English sententence with an empty string to make the output more readable:
     # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
     #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
     #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
@@ -187,6 +213,7 @@ describe Chinese::Vocab do
 
       minimum_necessary_sentences = obj.select_minimum_necessary_sentences(s)
       specify { obj.contains_all_target_words?(minimum_necessary_sentences, :chinese).should be_true }
+      # Replaced each English sententence with an empty string to make the output more readable:
       # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
       #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
       #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
@@ -194,6 +221,56 @@ describe Chinese::Vocab do
       #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :english=>"", :target_words=>["越 来越"]}]
 
     end
+
+    context :remove_keys do
+
+      hash1       = {a: 1, b: 2, c: 3, d: 4}
+      hash2       = {a: 1, b: 2, c: 3, d: 4, e: 5}
+      hash_array = [hash1, hash2]
+
+      specify { vocab.remove_keys(hash_array, :a, :b).should == [{:c=>3, :d=>4}, {:c=>3, :d=>4, :e=>5}] }
+      # If the key to be removed is not present in the hash, the input and output should be the same:
+      specify { vocab.remove_keys(hash_array, :e).should == [{a: 1, b: 2, c: 3, d: 4}, {a: 1, b: 2, c: 3, d: 4}] }
+    end
+
+    context :add_key do
+      hash1       = {a: '123456', b: [1, 2, 3, 4]}
+      hash2       = {a: '1234', b: [1, 2, 3, 4]}
+      hash_array = [hash1, hash2]
+
+      specify {vocab.add_key(hash_array, :size) {|row| row[:a].length }.should ==
+               [{:a=>"123456", :b=>[1, 2, 3, 4], :size=>6}, {:a=>"1234", :b=>[1, 2, 3, 4], :size=>4}] }
+      # Without specifiying a block, the input and output should be the same:
+      specify {vocab.add_key(hash_array, :size).should == hash_array }
+
+    end
+
+    context :uwc_tag do
+
+      specify {vocab.uwc_tag("123").should == "3_words" }
+      specify {vocab.uwc_tag("12345").should == "5_words" }
+      specify {vocab.uwc_tag("1").should == "1_word" }
+    end
+
+    # context :min_sentences do
+
+    #   specify do
+    #     vocab.min_sentences.size.should < vocab.sentences.size
+    #     vocab.not_found.should be_empty
+    #   end
+    #   # Replaced each English and pinyin sententence with an empty string to make the output more readable:
+    #   # [{:chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"他, 他们, 谁"},
+    #   #  {:chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 打, 他"},
+    #   #  {:chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 他, 除了 以外"},
+    #   #  {:chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"浮鞋"},
+    #   #  {:chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"越 来越"}]
+    #   new_vocab = described_class.new(["我我我"])
+    #   specify do
+    #     new_vocab.min_sentences.should be_empty
+    #     new_vocab.not_found.should == ["我我我"]
+    #   end
+
+    # end
   end
 end
 

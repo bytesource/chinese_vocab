@@ -13,7 +13,7 @@ module Chinese
   class Vocab
     include Options
 
-    attr_reader :words, :compress, :chinese, :not_found
+    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin
 
     Validations = {:compress    => lambda {|value| is_boolean?(value) },
                    :with_pinyin => lambda {|value| is_boolean?(value) }}
@@ -61,7 +61,7 @@ module Chinese
     def sentences(options={})
       # Always run this method.
 
-      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], false)
+      @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
 
       queue     = Queue.new
       semaphore = Mutex.new
@@ -76,7 +76,7 @@ module Chinese
 
             local_result = select_sentence(word, options)
 
-            semaphore.synchronize { result << local_result }
+            semaphore.synchronize { result << local_result  unless local_result.nil? }
           end
         end
       }.each {|thread| thread.join }
@@ -104,11 +104,18 @@ module Chinese
     #
     # Returns an Array of Hash objects
     def min_sentences(options = {})
-      with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
+      @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
       # Always run this method.
       sentences         = sentences(options)
-      minimum_sentences = select_minimum_sentences(sorted_by_target_word_count)
-      minimum_sentences.map { |row| row.delete_keys(:target_words, :words) }
+      minimum_sentences = select_minimum_necessary_sentences(sentences)
+      # :uwc = 'unique words count'
+      with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
+      # :uws = 'unique words string'
+      with_uwc_uws_tags = add_key(with_uwc_tag, :uws) {|row| row[:target_words].join(', ') }
+      # Remove those keys we don't need anymore
+      result            = remove_keys(with_uwc_uws_tags, :target_words, :word)
+      @stored_sentences = result
+      @stored_sentences
     end
 
 
@@ -157,7 +164,7 @@ module Chinese
     end
 
 
-    def select_sentence(word, options)
+    def select_sentence(word, options={})
       sentence_pair = Scraper.new(word, options).sentence(options)
 
       # If a word was not found, try again using the alternate download source:
@@ -167,13 +174,14 @@ module Chinese
 
       if sentence_pair.empty?
         @not_found << word
+        return nil
       else
         chinese, english = sentence_pair
 
         result = Hash.new
         result.merge!(word:    word)
         result.merge!(chinese: chinese)
-        result.merge!(pinyin:  chinese.to_pinyin)  if options[:with_pinyin]
+        result.merge!(pinyin:  chinese.to_pinyin)  if @with_pinyin
         result.merge!(english: english)
       end
     end
@@ -190,7 +198,13 @@ module Chinese
 
           while(!queue.empty?)
             row       = queue.pop
-            sentence  = row[:chinese]
+            # In the raw that all words end up in @no_found, the hash_array only contains an empty array: [ [] ].
+            return  if row.empty?
+            begin
+              sentence  = row[:chinese]
+            rescue
+              puts "row: #{row}."
+            end
 
             target_words = target_words_per_sentence(sentence, @words)
 
@@ -243,6 +257,33 @@ module Chinese
         end
       end
       selected_rows
+    end
+
+
+    def remove_keys(hash_array, *keys)
+      hash_array.map { |row| row.delete_keys(*keys) }
+    end
+
+
+    def add_key(hash_array, key, &block)
+      hash_array.map do |row|
+        if block
+          row.merge({key => block.call(row)})
+        else
+          row
+        end
+      end
+    end
+
+
+    def uwc_tag(string)
+      size = string.length
+      case size
+      when 1
+        "1_word"
+      else
+        "#{size}_words"
+      end
     end
 
 
