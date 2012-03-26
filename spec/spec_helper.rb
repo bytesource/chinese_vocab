@@ -11,11 +11,12 @@ require 'chinese/vocab'
 
 module HelperMethods
 
-  def time (&block)
+  def time(&block)
     start = Time.now
     block.call if block
     stop  = Time.now
-    total = stop-start
+    total = (stop-start)/60
+    puts  "Time passed: #{total} minutes."
   end
 end
 

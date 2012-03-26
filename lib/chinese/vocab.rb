@@ -13,7 +13,7 @@ module Chinese
   class Vocab
     include Options
 
-    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin
+    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin, :stored_sentences
 
     Validations = {:compress    => lambda {|value| is_boolean?(value) },
                    :with_pinyin => lambda {|value| is_boolean?(value) }}
@@ -25,9 +25,8 @@ module Chinese
       @words    = edit_vocab(word_array)
       @words    = remove_redundant_single_char_words(@words)  if @compress
       @chinese  = is_unicode?(@words[0])
-      @not_found     = []
-      @sentences     = []
-      @min_sentences = []
+      @not_found        = []
+      @stored_sentences = []
     end
 
 
@@ -59,6 +58,7 @@ module Chinese
 
 
     def sentences(options={})
+      puts "Fetching sentences..."
       # Always run this method.
 
       @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
@@ -76,7 +76,9 @@ module Chinese
 
             local_result = select_sentence(word, options)
 
-            semaphore.synchronize { result << local_result  unless local_result.nil? }
+            semaphore.synchronize do
+              result << local_result  unless local_result.nil?
+            end
           end
         end
       }.each {|thread| thread.join }
@@ -107,15 +109,27 @@ module Chinese
       @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
       # Always run this method.
       sentences         = sentences(options)
+
+      puts "Calculating the minimum necessary sentences..."
       minimum_sentences = select_minimum_necessary_sentences(sentences)
       # :uwc = 'unique words count'
       with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
       # :uws = 'unique words string'
-      with_uwc_uws_tags = add_key(with_uwc_tag, :uws) {|row| row[:target_words].join(', ') }
+      with_uwc_uws_tags = add_key(with_uwc_tag, :uws) {|row| row[:target_words].sort.join(', ') }
       # Remove those keys we don't need anymore
       result            = remove_keys(with_uwc_uws_tags, :target_words, :word)
       @stored_sentences = result
       @stored_sentences
+    end
+
+
+    def to_csv(path_to_file, options = {})
+
+      CSV.open(path_to_file, "w", options) do |csv|
+        @stored_sentences.each do |row|
+          csv << row.values
+        end
+      end
     end
 
 
@@ -137,6 +151,8 @@ module Chinese
 
     # Remove all non-word characters
     def edit_vocab(word_array)
+      puts "Editing vocabulary..."
+
       word_array.map {|word|
         edited = remove_parens(word)
         distinct_words(edited).join(' ')
@@ -147,6 +163,8 @@ module Chinese
     # Input: ["看", "书", "看书"]
     # Output: ["看书"]
     def remove_redundant_single_char_words(words)
+      puts "Removing redundant single character words from the vocabulary..."
+
       single_char_words, multi_char_words = words.partition {|word| word.length == 1 }
       return single_char_words  if multi_char_words.empty?
 
@@ -164,7 +182,8 @@ module Chinese
     end
 
 
-    def select_sentence(word, options={})
+    # Uses options passed from #sentences
+    def select_sentence(word, options)
       sentence_pair = Scraper.new(word, options).sentence(options)
 
       # If a word was not found, try again using the alternate download source:
@@ -188,27 +207,24 @@ module Chinese
 
 
     def add_target_words(hash_array)
+      puts "Internal: Adding target words..."
       queue      = Queue.new
       semaphore  = Mutex.new
       result     = []
+      words      = @words
       hash_array.each {|hash| queue << hash}
 
       10.times.map {
-        Thread.new do
+        Thread.new(words) do
 
           while(!queue.empty?)
-            row       = queue.pop
-            # In the raw that all words end up in @no_found, the hash_array only contains an empty array: [ [] ].
-            return  if row.empty?
-            begin
-              sentence  = row[:chinese]
-            rescue
-              puts "row: #{row}."
+            row          = queue.pop
+            sentence     = row[:chinese]
+            target_words = target_words_per_sentence(sentence, words)
+
+            semaphore.synchronize do
+              result << row.merge(:target_words => target_words)
             end
-
-            target_words = target_words_per_sentence(sentence, @words)
-
-            semaphore.synchronize { result << row.merge(:target_words => target_words) }
           end
         end
       }.map {|thread| thread.join}
@@ -223,6 +239,8 @@ module Chinese
 
 
     def sort_by_target_word_count(with_target_words)
+      puts "Internal: Sorting by target word count and sentence lenght..."
+
       # First sort by size of unique word array (from large to short)
       # If the unique word count is equal, sort by the length of the sentence (from small to large)
       with_target_words.sort_by {|row|
@@ -287,6 +305,8 @@ module Chinese
     end
 
 
+
+
     def contains_all_target_words?(selected_rows, sentence_key)
 
       matched_words = @words.reduce([]) do |acc, word|
@@ -308,6 +328,7 @@ module Chinese
 
 
     def is_unicode?(word)
+      puts "Unicode check..."
       # Remove all non-ascii and non-unicode word characters
       word = distinct_words(word).join
       # English text at this point only contains characters that are mathed by \w

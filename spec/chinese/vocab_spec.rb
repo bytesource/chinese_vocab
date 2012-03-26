@@ -75,13 +75,14 @@ describe Chinese::Vocab do
 
       # Word not found online
       specify do
-        vocab.select_sentence("罗飞科").should be_nil
+        vocab.select_sentence("罗飞科", {}).should be_nil
         vocab.not_found.include?("罗飞科").should be_true
       end
       specify do
-        vocab.select_sentence("浮鞋").should == {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"flapper float shoe"}
+        vocab.select_sentence("浮鞋", {}).should == {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"flapper float shoe"}
         vocab.not_found.include?("浮鞋").should be_false
-        p vocab.with_pinyin
+        # vocab.with_pinyin  # is always nil because @with_pinyin gets set in #senteces,
+        # but here #select sentence is called in isolation.
       end
     end
 
@@ -112,6 +113,9 @@ describe Chinese::Vocab do
         new_vocab.sentences(:with_pinyin => false).any? {|hash| hash.has_key?(:pinyin)}.should be_false
         new_vocab.with_pinyin.should be_false
       end
+
+      # @stored_sentences should be set to the result of this method.
+      specify {new_vocab.sentences.should == new_vocab.stored_sentences }
 
     end
 
@@ -146,12 +150,12 @@ describe Chinese::Vocab do
 
     end
 
-    # context :target_words_per_sentence do
-    #   sentence     = '除了饺子以外，我也很喜欢吃馒头'
-    #   target_words = ["我们","除了 以外","我","你","喜欢"]
+    context :target_words_per_sentence do
+      sentence     = '除了饺子以外，我也很喜欢吃馒头'
+      target_words = ["我们","除了 以外","我","你","喜欢"]
 
-    #   specify { vocab.target_words_per_sentence(sentence, target_words).should == ["除了 以外", "我", "喜欢"] }
-    # end
+      specify { vocab.target_words_per_sentence(sentence, target_words).should == ["除了 以外", "我", "喜欢"] }
+    end
 
     context :add_target_words do
 
@@ -200,25 +204,24 @@ describe Chinese::Vocab do
       s = obj.sentences
       with_target_words = obj.add_target_words(s)
       sorted_by_target_word_count = obj.sort_by_target_word_count(with_target_words)
-      # Replaced each English sententence with an empty string to make the output more readable:
-    # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
-    #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
-    #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
-    #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"", :target_words=>["浮鞋"]},
-    #  {:word=>"他们", :chinese=>"他们正忙着装修爱巢呢！", :english=>"", :target_words=>["他们"]},
-    #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :english=>"", :target_words=>["越 来越"]},
-    #  {:word=>"我", :chinese=>"我们两家是世交，他比我大，是我的世兄。", :english=>"", :target_words=>["我"]}]
-
+      # Replaced each English and pinyin sententence with an empty string to make the output more readable:
+      # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :target_words=>["谁", "他们"]},
+      #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :target_words=>["我", "打"]},
+      #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :target_words=>["我", "除了 以外"]},
+      #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :target_words=>["浮鞋"]},
+      #  {:word=>"他们", :chinese=>"他们正忙着装修爱巢呢！", :pinyin=>"", :english=>"", :target_words=>["他们"]},
+      #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :target_words=>["越 来越"]},
+      #  {:word=>"我", :chinese=>"我们两家是世交，他比我大，是我的世兄。", :pinyin=>"", :english=>"", :target_words=>["我"]}]
       specify { obj.select_minimum_necessary_sentences(s).size.should < s.size }
 
       minimum_necessary_sentences = obj.select_minimum_necessary_sentences(s)
       specify { obj.contains_all_target_words?(minimum_necessary_sentences, :chinese).should be_true }
-      # Replaced each English sententence with an empty string to make the output more readable:
-      # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :english=>"", :target_words=>["谁", "他们"]},
-      #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :english=>"", :target_words=>["我", "打"]},
-      #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :english=>"", :target_words=>["我", "除了 以外"]},
-      #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"", :target_words=>["浮鞋"]},
-      #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :english=>"", :target_words=>["越 来越"]}]
+      # Replaced each English and pinyin sententence with an empty string to make the output more readable:
+      # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :target_words=>["谁", "他们"]},
+      #  {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :target_words=>["我", "打"]},
+      #  {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :target_words=>["我", "除了 以外"]},
+      #  {:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :target_words=>["浮鞋"]},
+      #  {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :target_words=>["越 来越"]}]
 
     end
 
@@ -252,25 +255,42 @@ describe Chinese::Vocab do
       specify {vocab.uwc_tag("1").should == "1_word" }
     end
 
-    # context :min_sentences do
+    context :min_sentences do
 
-    #   specify do
-    #     vocab.min_sentences.size.should < vocab.sentences.size
-    #     vocab.not_found.should be_empty
-    #   end
-    #   # Replaced each English and pinyin sententence with an empty string to make the output more readable:
-    #   # [{:chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"他, 他们, 谁"},
-    #   #  {:chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 打, 他"},
-    #   #  {:chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 他, 除了 以外"},
-    #   #  {:chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"浮鞋"},
-    #   #  {:chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"越 来越"}]
-    #   new_vocab = described_class.new(["我我我"])
-    #   specify do
-    #     new_vocab.min_sentences.should be_empty
-    #     new_vocab.not_found.should == ["我我我"]
-    #   end
+      specify do
+        vocab.min_sentences.size.should < vocab.sentences.size
+        vocab.not_found.should be_empty
+      end
+      # Replaced each English and pinyin sententence with an empty string to make the output more readable:
+      # [{:chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"他, 他们, 谁"},
+      #  {:chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 打, 他"},
+      #  {:chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :uwc=>"3_words", :uws=>"我, 他, 除了 以外"},
+      #  {:chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"浮鞋"},
+      #  {:chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :uwc=>"1_word", :uws=>"越 来越"}]
+      specify {vocab.contains_all_target_words?(vocab.min_sentences, :chinese).should be_true }
 
-    # end
+      # "罗飞科" cannot be found online.
+      new_vocab = described_class.new(["罗飞科"])
+      specify do
+        new_vocab.min_sentences.should be_empty
+        new_vocab.not_found.should == ["罗飞科"]
+      end
+
+      # @stored_sentences should be set to the result of this method.
+      specify { new_vocab.min_sentences.should == new_vocab.stored_sentences }
+
+    end
+
+    context :to_csv do
+
+
+      specify do
+        min = vocab.min_sentences
+        to_file = vocab.to_csv('test_file')
+        from_file = CSV.read('test_file', :encoding => 'utf-8')
+        from_file.should == to_file.map {|row| row.values }
+      end
+    end
   end
 end
 
