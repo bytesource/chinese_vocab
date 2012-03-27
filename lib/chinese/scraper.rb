@@ -48,6 +48,8 @@ module Chinese
       return @sentences  unless @sentences.nil?
 
       source    = Sources[@source]
+      # Note: Use + because << changes the object on its left hand side, but + doesn't:
+      # http://stackoverflow.com/questions/377768/string-concatenation-and-ruby/378258#378258
       url       = source[:url] + CGI.escape(@word)
       main_node = Nokogiri::HTML(open(url)).css(source[:parent_sel]) # Returns a single node.
       return []  if main_node.to_a.empty?

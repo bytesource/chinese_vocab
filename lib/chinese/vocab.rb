@@ -63,26 +63,37 @@ module Chinese
 
       @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
 
-      queue     = Queue.new
-      semaphore = Mutex.new
-      @words.each {|word| queue << word }
+      from_queue  = Queue.new
+      to_queue    = Queue.new
+      queue       = Queue.new
+      # semaphore = Mutex.new
+      @words.each {|word| from_queue << word }
       result = []
 
       5.times.map {
         Thread.new do
 
-          while(!queue.empty?) do
-            word = queue.pop
+          while(!from_queue.empty?) do
+            word = from_queue.pop
 
+            begin
             local_result = select_sentence(word, options)
-
-            semaphore.synchronize do
-              result << local_result  unless local_result.nil?
+            rescue SocketError => e
+              puts "I just catched a socket error"
+            rescue Exception => e
+              puts "I just catched ANOTHER exception: #{e}."
             end
+
+            to_queue << local_result  unless local_result.nil?
+
+            # semaphore.synchronize do
+            #   result << local_result  unless local_result.nil?
+            # end
           end
         end
       }.each {|thread| thread.join }
 
+      (to_queue.size).times { result << to_queue.pop }
       @stored_sentences = result
       @stored_sentences
     end
@@ -120,6 +131,15 @@ module Chinese
       result            = remove_keys(with_uwc_uws_tags, :target_words, :word)
       @stored_sentences = result
       @stored_sentences
+    end
+
+
+    def sentences_unique_chars(sentences = stored_sentences)
+
+      sentences.reduce([]) do |acc, row|
+        acc = acc | row.scan(/\p{Word}/) # only return characters, skip punctuation marks
+        acc
+      end
     end
 
 
@@ -208,28 +228,34 @@ module Chinese
 
     def add_target_words(hash_array)
       puts "Internal: Adding target words..."
-      queue      = Queue.new
-      semaphore  = Mutex.new
-      result     = []
-      words      = @words
-      hash_array.each {|hash| queue << hash}
+      from_queue  = Queue.new
+      to_queue    = Queue.new
+      # semaphore = Mutex.new
+      result      = []
+      words       = @words
+      hash_array.each {|hash| from_queue << hash}
 
       10.times.map {
         Thread.new(words) do
 
-          while(!queue.empty?)
-            row          = queue.pop
+          while(!from_queue.empty?)
+            row          = from_queue.pop
             sentence     = row[:chinese]
             target_words = target_words_per_sentence(sentence, words)
 
-            semaphore.synchronize do
-              result << row.merge(:target_words => target_words)
-            end
+            to_queue << row.merge(:target_words => target_words)
+
+            # semaphore.synchronize do
+            #   result << row.merge(:target_words => target_words)
+            # end
           end
         end
       }.map {|thread| thread.join}
 
+      (to_queue.size).times { result << to_queue.pop }
       result
+
+
     end
 
 
@@ -239,7 +265,7 @@ module Chinese
 
 
     def sort_by_target_word_count(with_target_words)
-      puts "Internal: Sorting by target word count and sentence lenght..."
+      puts "Internal: Sorting by target word count and sentence length..."
 
       # First sort by size of unique word array (from large to short)
       # If the unique word count is equal, sort by the length of the sentence (from small to large)
@@ -303,8 +329,6 @@ module Chinese
         "#{size}_words"
       end
     end
-
-
 
 
     def contains_all_target_words?(selected_rows, sentence_key)

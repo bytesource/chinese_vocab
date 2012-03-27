@@ -281,8 +281,19 @@ describe Chinese::Vocab do
 
     end
 
-    context :to_csv do
+    context :sentences_unique_chars do
+      my_sentences = ["我们跟他们是好朋友。","我们跟他们是好朋友。"]
 
+      specify { vocab.sentences_unique_chars(my_sentences).should == ["我", "们", "跟", "他", "是", "好", "朋", "友"] }
+      # Without an argument uses @stored_sentences as input.
+      specify do
+        # Create a stub:
+        vocab.stub(:stored_sentences) { ["我们跟他们是好朋友。","你你你你你你"] }
+        vocab.sentences_unique_chars.should == ["我", "们", "跟", "他", "是", "好", "朋", "友", "你"]
+      end
+    end
+
+    context :to_csv do
 
       specify do
         min = vocab.min_sentences
