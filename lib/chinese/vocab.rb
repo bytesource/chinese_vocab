@@ -8,6 +8,7 @@ require 'string_to_pinyin'
 require 'chinese/scraper'
 require 'chinese/modules/options'
 require 'chinese/core_ext/hash'
+require 'chinese/core_ext/queue'
 
 module Chinese
   class Vocab
@@ -57,6 +58,47 @@ module Chinese
     end
 
 
+    # def sentences(options={})
+    #   puts "Fetching sentences..."
+    #   # Always run this method.
+
+    #   @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
+
+    #   from_queue  = Queue.new
+    #   to_queue    = Queue.new
+    #   queue       = Queue.new
+    #   # semaphore = Mutex.new
+    #   @words.each {|word| from_queue << word }
+    #   result = []
+
+    #   5.times.map {
+    #     Thread.new do
+
+    #       while(!from_queue.empty?) do
+    #         word = from_queue.pop
+
+    #         begin
+    #         local_result = select_sentence(word, options)
+    #         rescue SocketError => e
+    #           puts "I just catched a socket error"
+    #         rescue Exception => e
+    #           puts "I just catched ANOTHER exception: #{e}."
+    #         end
+
+    #         to_queue << local_result  unless local_result.nil?
+
+    #         # semaphore.synchronize do
+    #         #   result << local_result  unless local_result.nil?
+    #         # end
+    #       end
+    #     end
+    #   }.each {|thread| thread.join }
+
+    #   (to_queue.size).times { result << to_queue.pop }
+    #   @stored_sentences = result
+    #   @stored_sentences
+    # end
+
     def sentences(options={})
       puts "Fetching sentences..."
       # Always run this method.
@@ -65,37 +107,76 @@ module Chinese
 
       from_queue  = Queue.new
       to_queue    = Queue.new
-      queue       = Queue.new
-      # semaphore = Mutex.new
+      file_name = 'temp/temp_data'
+
+      if File.exist?(file_name)
+        puts "examining file"
+        words, sentences, not_found = File.open(file_name) { |f| f.readlines }
+        @words = convert(words)
+        convert(sentences).each { |s| to_queue << s }
+        @not_found = convert(not_found)
+        p @words
+        p to_queue.to_a
+        p @not_found
+      end
+
       @words.each {|word| from_queue << word }
       result = []
+
+      Thread.abort_on_exception = false
 
       5.times.map {
         Thread.new do
 
           while(!from_queue.empty?) do
-            word = from_queue.pop
+            word  = from_queue.pop
+            count = 1
 
             begin
-            local_result = select_sentence(word, options)
-            rescue SocketError => e
-              puts "I just catched a socket error"
+              local_result = select_sentence(word, options)
+            rescue SocketError, Timeout::Error, Errno::ETIMEDOUT => e
+              pause = 1
+              puts " #{e.message}. Retry in #{pause} second(s)."
+              sleep(pause)
+              count -= 1
+              retry  if count > 0
+
+              raise
             rescue Exception => e
-              puts "I just catched ANOTHER exception: #{e}."
+              puts "I just catched exception: #{e}."
+              raise
+            ensure
+              from_queue << word  if $!
             end
+
 
             to_queue << local_result  unless local_result.nil?
 
-            # semaphore.synchronize do
-            #   result << local_result  unless local_result.nil?
-            # end
           end
         end
       }.each {|thread| thread.join }
 
-      (to_queue.size).times { result << to_queue.pop }
-      @stored_sentences = result
+      @stored_sentences = to_queue.to_a
       @stored_sentences
+    ensure
+      if $!
+        sleep 5 # Give the threads enough time to put the word back to the queue.
+
+        File.open(file_name, 'w') do |f|
+          # f.puts queue_to_array(from_queue)
+          f.write from_queue.to_a
+          f.puts
+          f.write to_queue.to_a
+          f.puts
+          f.write @not_found
+        end
+      else
+        File.unlink(file_name) if File.exist?(file_name)
+      end
+    end
+
+    def convert(text)
+      eval(text.chomp)
     end
 
 
@@ -254,7 +335,7 @@ module Chinese
 
       (to_queue.size).times { result << to_queue.pop }
       result
-
+      # to_queue.to_a
 
     end
 
