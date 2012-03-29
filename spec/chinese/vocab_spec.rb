@@ -55,6 +55,17 @@ describe Chinese::Vocab do
       specify { vocab.remove_redundant_single_char_words(edited_words).should == ["看书", "玩球"] }
     end
 
+    context :new_make_hash do
+      obj1 = described_class.new(["豆浆"])
+      obj2 = described_class.new(["豆浆"])
+      obj1.id.should == obj2.id
+
+      obj4 = described_class.new(["豆浆"], :compress => true)
+      obj5 = described_class.new(["豆浆"], :compress => true)
+      obj4.id.should == obj5.id
+
+    end
+
     context :remove_parens do
 
       # Using ASCII parens

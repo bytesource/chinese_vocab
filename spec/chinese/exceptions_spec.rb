@@ -25,10 +25,10 @@ describe Chinese::Vocab do
       specify do
         puts "all words: #{vocab.words}."
         min = vocab.min_sentences
-        vocab.contains_all_target_words?(min, :chinese).should be_true
         to_file = vocab.to_csv('test_file')
         from_file = CSV.read('test_file', :encoding => 'utf-8')
         from_file.should == to_file.map {|row| row.values }
+        vocab.contains_all_target_words?(min, :chinese).should be_true
       end
     end
   end

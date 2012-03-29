@@ -14,7 +14,7 @@ module Chinese
   class Vocab
     include Options
 
-    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin, :stored_sentences
+    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin, :stored_sentences, :id
 
     Validations = {:compress    => lambda {|value| is_boolean?(value) },
                    :with_pinyin => lambda {|value| is_boolean?(value) }}
@@ -26,6 +26,7 @@ module Chinese
       @words    = edit_vocab(word_array)
       @words    = remove_redundant_single_char_words(@words)  if @compress
       @chinese  = is_unicode?(@words[0])
+      @id       = make_hash(word_array, @compress)
       @not_found        = []
       @stored_sentences = []
     end
@@ -107,7 +108,8 @@ module Chinese
 
       from_queue  = Queue.new
       to_queue    = Queue.new
-      file_name = 'temp/temp_data'
+      file_name   = @id
+      p file_name
 
       if File.exist?(file_name)
         puts "examining file"
@@ -130,12 +132,12 @@ module Chinese
 
           while(!from_queue.empty?) do
             word  = from_queue.pop
-            count = 1
+            count = 4
 
             begin
               local_result = select_sentence(word, options)
-            rescue SocketError, Timeout::Error, Errno::ETIMEDOUT => e
-              pause = 1
+            rescue SocketError, Timeout::Error, Errno::ETIMEDOUT, Errno::ECONNREFUSED => e
+              pause = 4
               puts " #{e.message}. Retry in #{pause} second(s)."
               sleep(pause)
               count -= 1
@@ -163,7 +165,7 @@ module Chinese
         sleep 5 # Give the threads enough time to put the word back to the queue.
 
         File.open(file_name, 'w') do |f|
-          # f.puts queue_to_array(from_queue)
+          p "Writing to file..."
           f.write from_queue.to_a
           f.puts
           f.write to_queue.to_a
@@ -173,10 +175,6 @@ module Chinese
       else
         File.unlink(file_name) if File.exist?(file_name)
       end
-    end
-
-    def convert(text)
-      eval(text.chomp)
     end
 
 
@@ -261,6 +259,13 @@ module Chinese
     end
 
 
+    def make_hash(*data)
+      require 'digest'
+      data = data.reduce("") { |acc, item| acc << item.to_s }
+      Digest::SHA2.hexdigest(data)[0..6]
+    end
+
+
     # Input: ["看", "书", "看书"]
     # Output: ["看书"]
     def remove_redundant_single_char_words(words)
@@ -304,6 +309,11 @@ module Chinese
         result.merge!(pinyin:  chinese.to_pinyin)  if @with_pinyin
         result.merge!(english: english)
       end
+    end
+
+
+    def convert(text)
+      eval(text.chomp)
     end
 
 

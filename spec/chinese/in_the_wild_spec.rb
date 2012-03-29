@@ -9,8 +9,9 @@ describe Chinese::Vocab do
     anki = Chinese::Vocab.new(words, :compress => true)
 
     sentences = anki.min_sentences
-    puts "Contains all words?: #{anki.contains_all_target_words?(sentences)}."
     anki.to_csv('in_the_wild_test.csv')
+    puts "Contains all words?: #{anki.contains_all_target_words?(sentences, :chinese)}."
+    puts "Missing words: #{anki.not_found}"
   end
 
 end
