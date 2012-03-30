@@ -39,6 +39,7 @@ module Chinese
     def initialize(word, options={})
       @source = validate(:source, options, Validations[:source], :nciku)
       @word   = word
+      CGI.accept_charset = 'UTF-8'
     end
 
 
@@ -50,13 +51,8 @@ module Chinese
       source    = Sources[@source]
       # Note: Use + because << changes the object on its left hand side, but + doesn't:
       # http://stackoverflow.com/questions/377768/string-concatenation-and-ruby/378258#378258
-      # puts "cgi open -----------------------------------------"
       url       = source[:url] + CGI.escape(@word)
-      # puts @word
-      # puts "cgi close -----------------------------------------"
-      # puts "nokigiri main open -----------------------------------------"
       main_node = Nokogiri::HTML(open(url)).css(source[:parent_sel]) # Returns a single node.
-      # puts "nokigiri main close -----------------------------------------"
       return []  if main_node.to_a.empty?
 
       # CSS selector:   Returns the tags in the order they are specified

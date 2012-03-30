@@ -115,6 +115,14 @@ describe Chinese::Vocab do
         #   "I have no change except for this high denomination banknote."]]
       end
 
+      causes_shell_error = ["嗯"]
+      test_bash_error_vocab = described_class.new(causes_shell_error)
+
+      test_bash_error_vocab.sentences.should == nil
+      # [{:word=>"嗯", :chinese=>"why, that's impossible!", :pinyin=>"why, that's impossible!", :english=>"嗯，那是不可能的！"}]
+      test_bash_error_vocab.sentences(:with_pinyin => false).should == nil
+
+
       specify do
         new_vocab.sentences.all? {|hash| hash.has_key?(:pinyin)}.should be_true
         new_vocab.with_pinyin.should be_true

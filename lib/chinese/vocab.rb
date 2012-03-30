@@ -127,16 +127,17 @@ module Chinese
 
       Thread.abort_on_exception = false
 
-      5.times.map {
+      8.times.map {
         Thread.new do
 
-          while(!from_queue.empty?) do
-            word  = from_queue.pop
+          while(word = from_queue.pop!) do
             count = 4
 
             begin
               local_result = select_sentence(word, options)
-            rescue SocketError, Timeout::Error, Errno::ETIMEDOUT, Errno::ECONNREFUSED => e
+              puts "word: #{word}"
+            # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT, Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
+            rescue Exception => e
               pause = 4
               puts " #{e.message}. Retry in #{pause} second(s)."
               sleep(pause)
@@ -144,9 +145,9 @@ module Chinese
               retry  if count > 0
 
               raise
-            rescue Exception => e
-              puts "I just catched exception: #{e}."
-              raise
+            # rescue Exception => e
+            #   puts "I just catched exception: #{e}."
+            #   raise
             ensure
               from_queue << word  if $!
             end
@@ -329,16 +330,12 @@ module Chinese
       10.times.map {
         Thread.new(words) do
 
-          while(!from_queue.empty?)
-            row          = from_queue.pop
+          while(row = from_queue.pop!)
             sentence     = row[:chinese]
             target_words = target_words_per_sentence(sentence, words)
 
             to_queue << row.merge(:target_words => target_words)
 
-            # semaphore.synchronize do
-            #   result << row.merge(:target_words => target_words)
-            # end
           end
         end
       }.map {|thread| thread.join}
