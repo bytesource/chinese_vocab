@@ -2,8 +2,6 @@
 require 'cgi'
 require 'open-uri'
 require 'nokogiri'
-require 'chinese/core_ext/array'
-require 'chinese/modules/options'
 
 module Chinese
   class Scraper
@@ -39,17 +37,22 @@ module Chinese
                     :size   =>  lambda {|value| [:small, :middle, :large].include?(value) }}
 
 
+    def initialize(word, options={})
+      @source = validate(:source, options, Validations[:source], :nciku)
+      @word   = word
+      CGI.accept_charset = 'UTF-8'
+    end
+
+
     # Options:
     # size => [:small, average, large], default = average
-    def self.sentences(word, options={})
-      download_source = validate(:source, options, Validations[:source], :nciku)
+    def sentences
+      return @sentences  unless @sentences.nil?
 
-      source = Sources[download_source]
-
-      CGI.accept_charset = 'UTF-8'
+      source    = Sources[@source]
       # Note: Use + because << changes the object on its left hand side, but + doesn't:
       # http://stackoverflow.com/questions/377768/string-concatenation-and-ruby/378258#378258
-      url       = source[:url] + CGI.escape(word)
+      url       = source[:url] + CGI.escape(@word)
       main_node = Nokogiri::HTML(open(url)).css(source[:parent_sel]) # Returns a single node.
       return []  if main_node.to_a.empty?
 
@@ -83,23 +86,29 @@ module Chinese
       #    (but sometimes it is the other way round.)
       sentence_pairs = sentence_pairs.map {|node1,node2| source[:reorder].call(node1,node2) }
 
-      sentence_pairs
+      @sentences = sentence_pairs
+      @sentences
     end
 
-    def self.sentence(word, options={})
+    def sentence(options={})
       value = validate(:size, options, Validations[:size], :small)
 
-      scraped_sentences = sentences(word, options)
+      # Scrap sentences from website first if necessary.
+      sentences         if sentences.nil?
+      # Return directly if no sentences were found.
+      return sentences  if sentences.empty?
 
       case value
       when :small
-        shortest_size(scraped_sentences)
+        shortest_size(@sentences)
       when :middle
-        average_size(scraped_sentences)
+        average_size(@sentences)
       when :large
-        longest_size(scraped_sentences)
+        longest_size(@sentences)
       end
     end
+
+
 
 
     # ===================
@@ -125,22 +134,23 @@ module Chinese
       word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
     end
 
-    def self.pair_with_empty_string?(pair)
+
+    def pair_with_empty_string?(pair)
       pair[0].empty? || pair[1].empty?
     end
 
     # Despite its name returns the SECOND shortest sentence,
     # as the shortest result often is not a real sentence,
     # but a definition.
-    def self.shortest_size(sentence_pairs)
+    def shortest_size(sentence_pairs)
       sentence_pairs.sort_by {|(cn,_)| cn.length }.take(2).last
     end
 
-    def self.longest_size(sentence_pairs)
+    def longest_size(sentence_pairs)
       sentence_pairs.sort_by {|(cn,_)| cn.length }.last
     end
 
-    def self.average_size(sentence_pairs)
+    def average_size(sentence_pairs)
       sorted = sentence_pairs.sort_by {|(cn,_)| cn.length }
       length = sorted.length
       sorted.find {|(cn,_)| cn.size >= length/2 }

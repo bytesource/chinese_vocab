@@ -2,8 +2,6 @@
 require 'cgi'
 require 'open-uri'
 require 'nokogiri'
-require 'chinese/core_ext/array'
-require 'chinese/modules/options'
 
 module Chinese
   class Scraper
