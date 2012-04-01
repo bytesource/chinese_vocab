@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 module Chinese
-  module Options
+  module OptionValidations
 
     # In order to be able to validate options in both
     # instance and singleton methods
@@ -12,32 +12,50 @@ module Chinese
       klass.extend(self)
     end
 
-    def __validation_constant__
+
+    def __object__
       # If self.class equals Class, then self is not an instance of a class
       # (except for class Class of course),
       # which means we are inside a sigleton method.
       if self.class == Class
-        self::Validations
+        self::Options
       else  # self is an instance of a class
-        self.class::Validations
+        self.class::Options
       end
     end
 
 
     # Example usage:
     # validate(:source, options, lambda {|val| [:nciku, :jukuu].include?(val) }, :nciku)
-    def validate(options, key, validation=__validation_constant__[key], default_value)
+    def validate_value(options, key, validation = __object__, default_value)
       # If key was not passed as a parameter, return its default value.
       return default_value  unless options.has_key?(key)
 
       value = options[key]
       # Check if 'value' is a valid value.
-      if validation.call(value)
+      if validation[key][0].call(value)
         value
       else
         raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
       end
     end
+
+    def validate_keys(options, validation = __object__, method = __callee__)
+
+    end
+
+
+    def __option_keys__(method_name, data)
+      puts "data #{data}"
+      data.select do |key, value|
+      puts "key #{key}"
+      puts "array #{value}"
+      value[1].include?(method_name)
+      end.keys
+    end
+
+
+
 
 
     # Often used validation methods

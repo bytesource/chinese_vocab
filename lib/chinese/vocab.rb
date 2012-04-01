@@ -22,7 +22,7 @@ module Chinese
 
     def initialize(word_array, options={})
       # TODO: extend 'edit_vocab to also handle English text properly (e.g. remove 'somebody', 'someone', 'so', 'to do sth' etc)
-      @compress = validate(:compress, options, Validations[:compress], false)
+      @compress = validate(options, :compress, false)
       @words    = edit_vocab(word_array)
       @words    = remove_redundant_single_char_words(@words)  if @compress
       @chinese  = is_unicode?(@words[0])
@@ -63,7 +63,7 @@ module Chinese
     #   puts "Fetching sentences..."
     #   # Always run this method.
 
-    #   @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
+    #   @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
 
     #   from_queue  = Queue.new
     #   to_queue    = Queue.new
@@ -104,7 +104,7 @@ module Chinese
       puts "Fetching sentences..."
       # Always run this method.
 
-      @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
+      @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
 
       from_queue  = Queue.new
       to_queue    = Queue.new
@@ -197,7 +197,7 @@ module Chinese
     #
     # Returns an Array of Hash objects
     def min_sentences(options = {})
-      @with_pinyin = validate(:with_pinyin, options, Validations[:with_pinyin], true)
+      @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
       # Always run this method.
       sentences         = sentences(options)
 
@@ -291,12 +291,13 @@ module Chinese
 
     # Uses options passed from #sentences
     def select_sentence(word, options)
-      sentence_pair = Scraper.new(word, options).sentence(options)
+      puts word
+      sentence_pair = Scraper.sentence(word, options)
 
       # If a word was not found, try again using the alternate download source:
       alternate     = alternate_source(Scraper::Sources.keys, options[:source])
       options       = options.merge(:source => alternate)
-      sentence_pair = Scraper.new(word, options).sentence(options)  if sentence_pair.empty?
+      sentence_pair = Scraper.sentence(word, options)  if sentence_pair.empty?
 
       if sentence_pair.empty?
         @not_found << word
@@ -439,16 +440,16 @@ module Chinese
     end
 
 
-    def is_unicode?(word)
-      puts "Unicode check..."
-      # Remove all non-ascii and non-unicode word characters
-      word = distinct_words(word).join
-      # English text at this point only contains characters that are mathed by \w
-      # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
-      # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
-      char_arr = word.scan(/\w/)
-      char_arr.size < word.size
-    end
+    # def is_unicode?(word)
+    #   puts "Unicode check..."
+    #   # Remove all non-ascii and non-unicode word characters
+    #   word = distinct_words(word).join
+    #   # English text at this point only contains characters that are mathed by \w
+    #   # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
+    #   # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
+    #   char_arr = word.scan(/\w/)
+    #   char_arr.size < word.size
+    # end
 
 
     # Input:
@@ -475,13 +476,13 @@ module Chinese
     end
 
 
-    # Input: "除了。。。 以外。。。"
-    # Outout: ["除了", "以外"]
-    def distinct_words(word)
-      # http://stackoverflow.com/a/3976004
-      # Alternative: /[[:word:]]+/
-      word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
-    end
+    # # Input: "除了。。。 以外。。。"
+    # # Outout: ["除了", "以外"]
+    # def distinct_words(word)
+    #   # http://stackoverflow.com/a/3976004
+    #   # Alternative: /[[:word:]]+/
+    #   word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
+    # end
 
   end
 end

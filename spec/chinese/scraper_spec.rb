@@ -29,7 +29,7 @@ describe Chinese::Scraper do
 
         # defaults:
         # :source = :nciku
-        specify { scraper.sentences(word, :source => :nciku).size.should == 1 }
+        specify { scraper.sentences(word).size.should == 1 }
         specify { scraper.sentences(word, :source => :nciku).should ==
                   [["新式的豆浆机配备了感应回水装置。",
                     "The new soybean milk machine is equipped with a inductive water-regurgitating setting."]] }
@@ -57,8 +57,15 @@ describe Chinese::Scraper do
         scraper.stub(:sentences) { result }
         scraper.sentence(word, :source => :nciku, :size => :small).should  == ["一二","one-two"]
       end
-      specify {scraper.sentence(word, :source => :nciku, :size => :middle).should == ["一二三","one-three"] }
-      specify {scraper.sentence(word, :source => :nciku, :size => :large).should  == ["一二三四五六","one-six"] }
+      specify do
+        scraper.stub(:sentences) { result }
+        scraper.sentence(word, :source => :nciku, :size => :middle).should == ["一二三","one-three"]
+      end
+      specify do
+        scraper.stub(:sentences) { result }
+        scraper.sentence(word, :source => :nciku, :size => :large).should  == ["一二三四五六","one-six"]
+      end
+
       # If no size specified, use :small as default
       specify {scraper.sentence(word)  ==  ["一二","one-two"]}
 
@@ -90,7 +97,7 @@ describe Chinese::Scraper do
 
       let(:no_word) { "#$@" }
 
-      describe "Scraping the ncikuu website" do
+      describe "Scraping the nciku website" do
 
         specify { scraper.sentences(no_word, :source => :nciku).should be_empty }
         # defaults:

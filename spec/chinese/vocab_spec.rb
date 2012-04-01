@@ -116,12 +116,15 @@ describe Chinese::Vocab do
       end
 
       specify do
-      causes_shell_error = ["嗯"]
-      test_bash_error_vocab = described_class.new(causes_shell_error)
+      with_switched_output = ["嗯"] # With this character, the Chinese sentence is attached to the css target of the English sentence.
+      test_vocab = described_class.new(with_switched_output)
 
-      test_bash_error_vocab.sentences.should == nil
-      # [{:word=>"嗯", :chinese=>"why, that's impossible!", :pinyin=>"why, that's impossible!", :english=>"嗯，那是不可能的！"}]
-      test_bash_error_vocab.sentences(:with_pinyin => false).should == nil
+      test_vocab.sentences.should ==
+        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", :pinyin=>"ēn ，wŏ yào yī bēi bīng kĕ lè ！",
+          :english=>"Um, I ordered my coke cold!"}]
+      test_vocab.sentences(:with_pinyin => false).should ==
+        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", english=>"Um, I ordered my coke cold!"}]
+
       end
 
 

@@ -10,7 +10,7 @@ describe Chinese::Options do
 
   context "Inspecting methods" do
 
-    specify { methods.should == [:validate, :is_boolean?] }
+    specify { methods.should == [:__validation_constant__, :validate, :is_boolean?, :is_unicode?, :distinct_words] }
 
 
   end
@@ -46,19 +46,27 @@ describe Chinese::Options do
     end
 
     context :validate do
+                                        # is_boolean? can be called because we included the module above.
+      Validations = {source: lambda {|value| is_boolean?(value) },
+                     other:  lambda {|value| ['hello', 'world'].include?(value) }}
 
-        options           = {:source => false, :other => 'hello'}  #
-        validation_source = lambda {|value| is_boolean?(value) }  # is_boolean? can be used because we included the module above.
-        options_other2    = {:other => 'not_defined'}    # Value not valid. Should raise exception
-        options_other3    = {}                           # key not present. Should return default value for key.
-        validation_other  = lambda {|value| ['hello', 'world'].include?(value) }
-        default_source    = true
-        default_other     = 'default'
 
-        specify { test_class.validate(:source, options, validation_source, default_source).should be_false }
-        specify { test_class.validate(:other , options, validation_other , default_other).should == 'hello' }
-        specify { lambda do test_class.validate(:other , options_other2, validation_other, default_other) end.should raise_exception }
-        specify { test_class.validate(:other , options_other3, validation_other, default_other).should == 'default' }
+      let(:options)   { {:source => false, :other => 'hello'} }
+      let(:ops_other) { [{:other => 'not_defined'}, # Value not valid. Should raise exception
+                           {}] }                      # Key not present. Should return default value for key.
+
+      let(:defaults) { [false, 'hello', 'default'] }
+
+      # 'validate' as singleton method
+      specify { test_class.validate(options, :source, defaults[0]).should be_false }
+      specify { test_class.validate(options, :other , Validations[:other] , defaults[1]).should == 'hello' }
+      specify { lambda do test_class.validate(ops_other[0], :other , Validations[:other], defaults[1]) end.should raise_exception }
+      specify { test_class.validate(ops_other[1], :other , Validations[:other], defaults[2]).should == 'default' }
+      # 'validate' as instance method
+      specify { test_class.new.validate(options, :source, defaults[0]).should be_false }
+      specify { test_class.new.validate(options, :other , Validations[:other] , defaults[1]).should == 'hello' }
+      specify { lambda do test_class.new.validate(ops_other[0], :other , Validations[:other], defaults[1]) end.should raise_exception }
+      specify { test_class.new.validate(ops_other[1], :other , Validations[:other], defaults[2]).should == 'default' }
     end
   end
 end

@@ -42,7 +42,7 @@ module Chinese
     # Options:
     # size => [:small, average, large], default = average
     def self.sentences(word, options={})
-      download_source = validate(:source, options, Validations[:source], :nciku)
+      download_source = validate(options, :source, Validations[:source], :nciku)
 
       source = Sources[download_source]
 
@@ -87,9 +87,10 @@ module Chinese
     end
 
     def self.sentence(word, options={})
-      value = validate(:size, options, Validations[:size], :small)
+      value = validate(options, :size, Validations[:size], :small)
 
       scraped_sentences = sentences(word, options)
+      return [] if scraped_sentences.empty?
 
       case value
       when :small
@@ -106,24 +107,24 @@ module Chinese
     # Helper functions
     # ===================
 
-    def self.is_unicode?(word)
-      puts "Unicode check..."
-      # Remove all non-ascii and non-unicode word characters
-      word = distinct_words(word).join
-      # English text at this point only contains characters that are mathed by \w
-      # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
-      # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
-      char_arr = word.scan(/\w/)
-      char_arr.size < word.size
-    end
+    # def self.is_unicode?(word)
+    #   puts "Unicode check..."
+    #   # Remove all non-ascii and non-unicode word characters
+    #   word = distinct_words(word).join
+    #   # English text at this point only contains characters that are mathed by \w
+    #   # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
+    #   # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
+    #   char_arr = word.scan(/\w/)
+    #   char_arr.size < word.size
+    # end
 
-    # Input: "除了。。。 以外。。。"
-    # Outout: ["除了", "以外"]
-    def self.distinct_words(word)
-      # http://stackoverflow.com/a/3976004
-      # Alternative: /[[:word:]]+/
-      word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
-    end
+    # # Input: "除了。。。 以外。。。"
+    # # Outout: ["除了", "以外"]
+    # def self.distinct_words(word)
+    #   # http://stackoverflow.com/a/3976004
+    #   # Alternative: /[[:word:]]+/
+    #   word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
+    # end
 
     def self.pair_with_empty_string?(pair)
       pair[0].empty? || pair[1].empty?
