@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'chinese/core_ext/hash'
 
 module Chinese
   module OptionValidations
@@ -12,50 +13,89 @@ module Chinese
       klass.extend(self)
     end
 
-
-    def __object__
+    def __methods__
       # If self.class equals Class, then self is not an instance of a class
       # (except for class Class of course),
       # which means we are inside a sigleton method.
       if self.class == Class
-        self::Options
+        self::Methods
       else  # self is an instance of a class
-        self.class::Options
+        self.class::Methods
+      end
+    end
+
+    def __validations__
+      # If self.class equals Class, then self is not an instance of a class
+      # (except for class Class of course),
+      # which means we are inside a sigleton method.
+      if self.class == Class
+        self::Validations
+      else  # self is an instance of a class
+        self.class::Validations
       end
     end
 
 
-    # Example usage:
-    # validate(:source, options, lambda {|val| [:nciku, :jukuu].include?(val) }, :nciku)
-    def validate_value(options, key, validation = __object__, default_value)
-      # If key was not passed as a parameter, return its default value.
-      return default_value  unless options.has_key?(key)
+    def validate_options_of(methods, ops, m_const=__methods__, validations=__validations__)
+      invalid_keys = __include_invalid_keys__?(methods, ops, m_const)
+      raise ArgumentError, "The following key(s) is/are not supported: #{invalid_keys.join(', ')}"  if invalid_keys
 
-      value = options[key]
+      extracted_options = __extract_options__(methods, ops, m_const)
+
+      extracted_options.reduce({}) do |acc, (m, options)|
+        result = __validate_all__(m_const[m], options, validations)
+        acc.merge!({m => result})
+        acc
+      end
+    end
+
+
+    def __include_invalid_keys__?(methods, ops, m_const=__methods__)
+      supported_keys   = methods.map { |m| m_const[m] }.flatten.uniq
+      unsupported_keys = ops.delete_keys(*supported_keys).keys
+      if unsupported_keys.size > 0
+        unsupported_keys
+      else
+        false
+      end
+    end
+
+
+    def __extract_options__(methods, ops, m_const=__methods__)
+      methods.reduce({}) do |acc, m|
+        options = ops.slice(*m_const[m])
+        acc.merge!({m => options})
+        acc
+      end
+    end
+
+
+    def __validate_value_of__(key, ops, validations=__validations__)
+      return {} if ops.empty?
+      data = validations[key]
+      return {} unless data
+
+      default_value = data[0]
+      validation    = data[1]
+      # If key was not passed as a parameter, return its default value.
+      return Hash[key, default_value]  unless ops.has_key?(key)
+      value = ops[key]
       # Check if 'value' is a valid value.
-      if validation[key][0].call(value)
-        value
+      if validation.call(value)
+        Hash[key, value]
       else
         raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
       end
     end
 
-    def validate_keys(options, validation = __object__, method = __callee__)
 
+    def __validate_all__(keys_from_method_constant, ops, validations=__validations__)
+      keys_from_method_constant.reduce({}) do |hash, key|
+        result = __validate_value_of__(key, ops, validations)
+        hash.merge!(result)
+        hash
+      end
     end
-
-
-    def __option_keys__(method_name, data)
-      puts "data #{data}"
-      data.select do |key, value|
-      puts "key #{key}"
-      puts "array #{value}"
-      value[1].include?(method_name)
-      end.keys
-    end
-
-
-
 
 
     # Often used validation methods
