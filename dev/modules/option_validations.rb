@@ -50,6 +50,9 @@ module Chinese
     end
 
 
+    # For every method in 'methods', add the supported keys from Methods[:method].
+    # Substract from the keys in the options passed.
+    # If there are remaining keys in the passed options, these are not supported.
     def __include_invalid_keys__?(methods, ops, m_const=__methods__)
       supported_keys   = methods.map { |m| m_const[m] }.flatten.uniq
       unsupported_keys = ops.delete_keys(*supported_keys).keys
@@ -61,17 +64,37 @@ module Chinese
     end
 
 
+    # Find the supported keys for every method in methods (based on the keys given in Methods['method'])
+    # and return a hash of the following kind:
+    # {m1 => {key/val pairs found in options}, m2 => {key/val pairs found in options}, ...}
+    # NOTE: If no supported keys are found in the options passed for a particular method,
+    # an empty array is returned for that method ({..., m => {}, ...}).
     def __extract_options__(methods, ops, m_const=__methods__)
       methods.reduce({}) do |acc, m|
-        options = ops.slice(*m_const[m])
-        acc.merge!({m => options})
+        method_options_hash = extract_options(m, ops, m_const)
+        acc.merge!(method_options_hash)
         acc
       end
     end
 
+    def extract_options(m, ops, m_const=__methods__)
+      options = ops.slice(*m_const[m])
+      Hash[m, options]
+    end
 
+
+
+    # ops = extracted options (see method '__extract_options__')
+    # key = an option key of a method from the array at Methods['method']
+    # Validation steps:
+    # 1) Return empty hash if there is no entry for this key in Validations
+    #    (this is normally the case with options of third-party libraries,
+    #    that do their own options validations.)
+    # 2) Return a hash {key => 'default_value'} if key was not found in the options.
+    # 3) Do the validation. If the validation passes:
+    #    -- return hash {key => 'passed value' }, else
+    #    -- throw exception "'passed value' is not a valid value"
     def __validate_value_of__(key, ops, validations=__validations__)
-      return {} if ops.empty?
       data = validations[key]
       return {} unless data
 
@@ -89,8 +112,12 @@ module Chinese
     end
 
 
-    def __validate_all__(keys_from_method_constant, ops, validations=__validations__)
-      keys_from_method_constant.reduce({}) do |hash, key|
+
+    # ops  = extracted options (see method '__extract_options__')
+    # keys = the array of supported keys of a method at Methods['method']
+    # Validate every key in keys with __validate_value_of__
+    def __validate_all__(keys, ops, validations=__validations__)
+      keys.reduce({}) do |hash, key|
         result = __validate_value_of__(key, ops, validations)
         hash.merge!(result)
         hash

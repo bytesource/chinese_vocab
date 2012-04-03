@@ -10,7 +10,11 @@ describe Chinese::OptionValidations do
 
   context "Inspecting methods" do
 
-    specify { methods.should == [] }
+    specify { methods.should ==
+              [:__methods__, :__validations__, :validate_options_of,
+               :__include_invalid_keys__?, :__extract_options__,
+               :__validate_value_of__, :__validate_all__, :is_boolean?,
+               :is_unicode?, :distinct_words] }
 
   end
 
@@ -33,15 +37,35 @@ describe Chinese::OptionValidations do
                       csv:             CSV::DEFAULT_OPTIONS.keys}
 
 
+        # Instance method
         def test_validation(options={})
-          ops = validate_options_of(__callee__, :csv)
+          ops = validate_options_of([__callee__, :csv], options)
 
           helper_method(ops[:helper_method])
 
           CSV.parse("1,2,3", ops[:csv])
+
+          return ops
         end
 
+        # Singleton method
+        def self.test_validation(options={})
+          ops = validate_options_of([__callee__, :csv], options)
+
+          helper_method(ops[:helper_method])
+
+          CSV.parse("1,2,3", ops[:csv])
+
+          return ops
+        end
+
+        # Instance method
         def helper_method(options={})
+          # uses :with_pinyin, :size
+        end
+
+        # Singleton method
+        def self.helper_method(options={})
           # uses :with_pinyin, :size
         end
       end
@@ -132,34 +156,63 @@ describe Chinese::OptionValidations do
 
     context :validate_options_of do
 
-      it "should throw an exception if a key is not supported" do
+      context "When called as an instance method" do
 
-        options10 = {size: :average, not_supported: 'some_value'}
+        it "should throw an exception if a key is not supported" do
 
-        lambda do
-          TestClass.new.validate_options_of([:csv, :helper_method], options10)
-        end.should raise_exception(ArgumentError, /not_supported/)
+          options10 = {size: :average, not_supported: 'some_value'}
+
+          lambda do
+            TestClass.new.validate_options_of([:csv, :helper_method], options10)
+          end.should raise_exception(ArgumentError, /not_supported/)
+        end
+
+        options11 = {size: :average, with_pinyin: false}
+        specify { TestClass.new.validate_options_of([:csv, :helper_method], options11).should ==
+                  {:csv=>{}, :helper_method=>{:with_pinyin=>false, :size=>:average}} }
+
+        # :size key not found in options, return default value
+        options12 = {with_pinyin: false}
+        specify { TestClass.new.validate_options_of([:csv, :helper_method], options12).should ==
+                  {:csv=>{}, :helper_method=>{:with_pinyin=>false, :size=>:average}} }
+
       end
 
-      options11 = {size: :average, with_pinyin: false}
-      specify { TestClass.new.validate_options_of([:csv, :helper_method], options11).should ==
-                {:csv=>{}, :helper_method=>{:with_pinyin=>false, :size=>:average}} }
 
-      # :size key not found in options, return default value
-      options12 = {with_pinyin: false}
-      specify { TestClass.new.validate_options_of([:csv, :helper_method], options12).should ==
-                {:csv=>{}, :helper_method=>{:with_pinyin=>false, :size=>:average}} }
-
-       it "should throw an exception if a value is not valid" do
+      it "should throw an exception if a value is not valid" do
 
         options13 = {size: 'invalid_value', with_pinyin: false}
 
         lambda do
           TestClass.new.validate_options_of([:csv, :helper_method], options13)
         end.should raise_exception(ArgumentError, /invalid_value/)
+
       end
 
+      context "When calling as a singleton method" do
+
+        options12 = {with_pinyin: false}
+        specify { TestClass.validate_options_of([:csv, :helper_method], options12).should ==
+                  {:csv=>{}, :helper_method=>{:with_pinyin=>false, :size=>:average}} }
+
+      end
+
+
+      context "When calling the method 'validate_options_of' is called from" do
+
+        options12 = {with_pinyin: false}
+
+        # 'validate_options_of' called as an instance method from inside an instance method.
+        specify { TestClass.new.test_validation(options12).should ==
+                  {:test_validation=>{:with_pinyin=>false, :size=>:average}, :csv=>{}} }
+
+        # 'validate_options_of' called as a singleton method from inside a singleton method.
+        specify { TestClass.test_validation(options12).should ==
+                  {:test_validation=>{:with_pinyin=>false, :size=>:average}, :csv=>{}} }
+
+      end
     end
+
 
 
     context :is_boolean? do

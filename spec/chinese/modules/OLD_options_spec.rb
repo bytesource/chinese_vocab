@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-describe Chinese::OptionValidations do
+describe Chinese::Options do
 
   let(:mod)     { described_class }
   let(:methods) { mod.instance_methods(false) }
@@ -21,7 +21,7 @@ describe Chinese::OptionValidations do
   context "When including the module" do
 
       class WithOptions
-        include Chinese::OptionValidations
+        include Chinese::Options
 
         Options = {:source =>  [lambda {|value| is_boolean?(value) },[:method1, :method3]],
                    :other =>   [lambda {|value| ['hello', 'world'].include?(value) }, [:method1, :method2]]}

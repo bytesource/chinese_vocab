@@ -17,6 +17,7 @@ describe Chinese::Vocab do
     anki.to_csv('in_the_wild_test.csv')
     puts "Contains all words?: #{anki.contains_all_target_words?(sentences, :chinese)}."
     puts "Missing words: #{anki.not_found}"
+    puts "Number of unique characters in sentences: #{anki.sentences_unique_chars}"
   end
 
 end

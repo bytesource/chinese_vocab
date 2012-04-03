@@ -123,7 +123,7 @@ describe Chinese::Vocab do
         [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", :pinyin=>"ēn ，wŏ yào yī bēi bīng kĕ lè ！",
           :english=>"Um, I ordered my coke cold!"}]
       test_vocab.sentences(:with_pinyin => false).should ==
-        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", english=>"Um, I ordered my coke cold!"}]
+        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", :english=>"Um, I ordered my coke cold!"}]
 
       end
 
