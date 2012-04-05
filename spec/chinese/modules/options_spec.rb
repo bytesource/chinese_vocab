@@ -3,70 +3,128 @@
 require 'spec_helper'
 
 describe Chinese::Options do
-  include Chinese::Options  # Include here so we can use this module's #is_boolean? below
-
-  let(:mod)     { described_class }
-  let(:methods) { mod.instance_methods(false) }
-
-  context "Inspecting methods" do
-
-    specify { methods.should == [:__validation_constant__, :validate, :is_boolean?, :is_unicode?, :distinct_words] }
 
 
+  let(:mod) { described_class }
+
+
+  before(:all) do
+    class TestClass
+      include Chinese::Options
+
+      OPTIONS = {compact:    [false, lambda {|value| is_boolean?(value) }],
+                 with_pinyin: [true,     lambda {|value| puts "v: #{value} (#{value.class})"; r = is_boolean?(value); puts "r: #{r}"; r }],
+                 size:        [:average, lambda {|value| [:short, :average, :long].include?(value) }]}
+
+      def calls_validate(options={})
+        @compress = validate { :compact }
+        @compress
+      end
+
+      def self.calls_validate(options={})
+        @compress, @with_pinyin, @size = validate { [:compact, :with_pinyin, :size] }
+        [@compress, @with_pinyiin, @size]
+      end
+
+      # With errors
+      def calls_validate_key_not_found(options={})
+        @compress = validate { 'a string' }
+        @compress
+      end
+
+      def calls_validate_wrong_type(options={})
+        @compress = validate { {:compact => true} }
+        @compress
+      end
+    end
   end
 
-  context "When including the module" do
+  context "When TestClass includes the module" do
 
-    let(:test_class) do
-      class WithOptions
-        include Chinese::Options
+    it "should add all of the module's methods as BOTH instance and singleton methods" do
+
+      mod.instance_methods(false).all? do |m|
+        TestClass.new.respond_to?(m)
+        TestClass.respond_to?(m)
       end
     end
 
-    it "should add its methods as intance methods of the class" do
-
-      methods.each do |m|
-        test_class.new.respond_to?(m).should be_true
-      end
-    end
-
-    it "should add its methods as singleton methods of the class" do
-
-      methods.each do |m|
-        test_class.respond_to?(m).should be_true
-      end
-    end
-
-
-    context :is_boolean? do
-
-      specify {test_class.is_boolean?(true).should be_true }
-      specify {test_class.is_boolean?(false).should be_true }
-      specify {test_class.is_boolean?('true').should be_false }
-    end
 
     context :validate do
-                                        # is_boolean? can be called because we included the module above.
-      Validations = {source: lambda {|value| is_boolean?(value) },
-                     other:  lambda {|value| ['hello', 'world'].include?(value) }}
 
+        # Option hash
+        # All options provided
+        options_complete_no_defaults     = {compact: true, with_pinyin: false, size: :short}
+        options_includes_unsupported_key = {compact: true, with_pinyin: false, size: :short, unsupported: ''}
+        options_no_keys                  = {}
+        options_with_invalid_value       = {compact: true, with_pinyin: false, size: 'invalid'}
 
-      let(:options)   { {:source => false, :other => 'hello'} }
-      let(:ops_other) { [{:other => 'not_defined'}, # Value not valid. Should raise exception
-                           {}] }                      # Key not present. Should return default value for key.
+      context "On Failure" do
 
-      let(:defaults) { [false, 'hello', 'default'] }
+        it "should raise an exception if no block is given" do
 
-      # 'validate' as singleton method
-      specify { test_class.validate(options, :source, defaults[0]).should be_false }
-      specify { test_class.validate(options, :other , Validations[:other] , defaults[1]).should == 'hello' }
-      specify { lambda do test_class.validate(ops_other[0], :other , Validations[:other], defaults[1]) end.should raise_exception }
-      specify { test_class.validate(ops_other[1], :other , Validations[:other], defaults[2]).should == 'default' }
-      # 'validate' as instance method
-      specify { test_class.new.validate(options, :source, defaults[0]).should be_false }
-      specify { test_class.new.validate(options, :other , Validations[:other] , defaults[1]).should == 'hello' }
-      specify { lambda do test_class.new.validate(ops_other[0], :other , Validations[:other], defaults[1]) end.should raise_exception }
-      specify { test_class.new.validate(ops_other[1], :other , Validations[:other], defaults[2]).should == 'default' }
+          lambda do
+            TestClass.new.validate
+          end.should raise_exception(ArgumentError, /No block given/)
+        end
+
+        it "should raise an exception if the block is empty" do
+
+          lambda do
+            TestClass.new.validate {    }
+          end.should raise_exception(ArgumentError, /Block is empty/)
+        end
+
+        it "should raise an exception if a key is not found in OPTIONS" do
+
+          lambda do
+            TestClass.new.calls_validate_key_not_found
+          end.should raise_exception(ArgumentError, /'a string' not found in OPTIONS/)
+        end
+
+        it "should raise an exception if the argument has the wrong type" do
+
+          lambda do
+            TestClass.new.calls_validate_wrong_type
+          end.should raise_exception(ArgumentError, /Invalid argument '{:compact=>true}'/)
+        end
+
+        it "should raise an exception if a key value is invalid" do
+
+          lambda do
+            TestClass.calls_validate(options_with_invalid_value)
+          end.should raise_exception(ArgumentError, /'invalid'/)
+        end
+      end
+
+      context "On success" do
+
+        it "should return the validated values, using the default value if a key is passed to 'validate'
+            is not part of the option hash" do
+
+              TestClass.calls_validate(options_complete_no_defaults).should     == [:true, false, :short]
+              #                                                                     [true, nil, :short]
+              # TestClass.new.calls_validate(options_complete_no_defaults).should == true
+            end
+      end
+    end
+
+     context :is_boolean? do
+
+      specify {TestClass.is_boolean?(true).should be_true }
+      specify {TestClass.is_boolean?(false).should be_true }
+      specify {TestClass.is_boolean?('true').should be_false }
+      specify {TestClass.is_boolean?(:true).should be_false }
+    end
+
+     context :is_unicode? do
+
+      ascii   = ["hello, ....", "This is perfect!"]
+      chinese = ["U盘", "X光", "周易衡"]
+
+      specify { ascii.all? {|word| TestClass.is_unicode?(word) }.should be_false }
+      specify { chinese.all? {|word| TestClass.is_unicode?(word) }.should be_true }
+
     end
   end
 end

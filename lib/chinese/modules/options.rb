@@ -12,35 +12,85 @@ module Chinese
       klass.extend(self)
     end
 
-    def __validation_constant__
-      # If self.class equals Class, then self is not an instance of a class
-      # (except for class Class of course),
-      # which means we are inside a sigleton method.
-      if self.class == Class
-        self::Validations
-      else  # self is an instance of a class
-        self.class::Validations
-      end
-    end
+    # def __validation_constant__
+    #   # If self.class equals Class, then self is not an instance of a class
+    #   # (except for class Class of course),
+    #   # which means we are inside a sigleton method.
+    #   if self.class == Class
+    #     self::Validations
+    #   else  # self is an instance of a class
+    #     self.class::Validations
+    #   end
+    # end
 
 
-    # Example usage:
-    # validate(:source, options, lambda {|val| [:nciku, :jukuu].include?(val) }, :nciku)
-    def validate(options, key, validation=__validation_constant__[key], default_value)
-      # If key was not passed as a parameter, return its default value.
-      return default_value  unless options.has_key?(key)
+    # # Example usage:
+    # # validate(:source, options, lambda {|val| [:nciku, :jukuu].include?(val) }, :nciku)
+    # def validate(options, key, validation=__validation_constant__[key], default_value)
+    #   # If key was not passed as a parameter, return its default value.
+    #   return default_value  unless options.has_key?(key)
 
-      value = options[key]
-      # Check if 'value' is a valid value.
-      if validation.call(value)
-        value
+    #   value = options[key]
+    #   # Check if 'value' is a valid value.
+    #   if validation.call(value)
+    #     value
+    #   else
+    #     raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
+    #   end
+    # end
+
+    def validate(&block)
+      raise ArgumentError, "No block given" unless block
+
+      argument = block.call
+      # Raise exception if the block is empty.
+      raise ArgumentError, "Block is empty"  if argument.nil?
+
+      keys = []
+      case argument
+      when Symbol, String  # single key
+        keys = [argument]
+      when Array   # array of keys
+        keys = argument
       else
-        raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
+        raise ArgumentError,
+          "Invalid argument '#{argument}'. \nYou can either pass a single key (Symbol) or several keys (Array of Symbols)."
       end
+
+      constant = eval("OPTIONS", block.binding)
+      options  = eval("options", block.binding)
+      # constant = block.binding.eval("OPTIONS")
+
+      values = keys.map do |key|
+        key = key.to_sym
+        # Raise exception if 'key' is NOT a key in the OPTIONS constant.
+        raise ArgumentError, "Key '#{key}' not found in OPTIONS" unless constant.keys.include?(key)
+
+        # If 'key' was not passed as a parameter, return its default value.
+        default_value = constant[key][0]
+        return default_value  unless options.has_key?(key)
+
+        value = options[key]
+        # Check if 'value' is a valid value.
+        validation = constant[key][1]
+        if validation.call(value)
+          "key: #{key}, value: #{value}"
+        else
+          raise ArgumentError, "'#{value}' (#{value.class}) is not a valid value for key '#{key}'."
+        end
+      end
+
+      if values.size > 1
+        values
+      else
+        values[0]
+      end
+
     end
 
 
-    # Often used validation methods
+
+    # Some useful validation methods
     # =============================
 
     def is_boolean?(value)
