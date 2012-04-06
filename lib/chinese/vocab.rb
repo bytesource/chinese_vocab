@@ -14,19 +14,19 @@ module Chinese
   class Vocab
     include Options
 
-    attr_reader :words, :compress, :chinese, :not_found, :with_pinyin, :stored_sentences, :id
+    attr_reader :words, :compact, :chinese, :not_found, :with_pinyin, :stored_sentences
 
-    Validations = {:compress    => lambda {|value| is_boolean?(value) },
-                   :with_pinyin => lambda {|value| is_boolean?(value) }}
+    OPTIONS = {:compact      => [false, lambda {|value| is_boolean?(value) }],
+               :with_pinyin  => [true,  lambda {|value| is_boolean?(value) }],
+               :thread_count => [8,     lambda {|value| value.kind_of?(Integer) }]}
 
 
     def initialize(word_array, options={})
       # TODO: extend 'edit_vocab to also handle English text properly (e.g. remove 'somebody', 'someone', 'so', 'to do sth' etc)
-      @compress = validate(options, :compress, false)
+      @compact = validate { :compact }
       @words    = edit_vocab(word_array)
-      @words    = remove_redundant_single_char_words(@words)  if @compress
+      @words    = remove_redundant_single_char_words(@words)  if @compact
       @chinese  = is_unicode?(@words[0])
-      @id       = make_hash(word_array, @compress)
       @not_found        = []
       @stored_sentences = []
     end
@@ -59,57 +59,16 @@ module Chinese
     end
 
 
-    # def sentences(options={})
-    #   puts "Fetching sentences..."
-    #   # Always run this method.
-
-    #   @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
-
-    #   from_queue  = Queue.new
-    #   to_queue    = Queue.new
-    #   queue       = Queue.new
-    #   # semaphore = Mutex.new
-    #   @words.each {|word| from_queue << word }
-    #   result = []
-
-    #   5.times.map {
-    #     Thread.new do
-
-    #       while(!from_queue.empty?) do
-    #         word = from_queue.pop
-
-    #         begin
-    #         local_result = select_sentence(word, options)
-    #         rescue SocketError => e
-    #           puts "I just catched a socket error"
-    #         rescue Exception => e
-    #           puts "I just catched ANOTHER exception: #{e}."
-    #         end
-
-    #         to_queue << local_result  unless local_result.nil?
-
-    #         # semaphore.synchronize do
-    #         #   result << local_result  unless local_result.nil?
-    #         # end
-    #       end
-    #     end
-    #   }.each {|thread| thread.join }
-
-    #   (to_queue.size).times { result << to_queue.pop }
-    #   @stored_sentences = result
-    #   @stored_sentences
-    # end
-
     def sentences(options={})
       puts "Fetching sentences..."
       # Always run this method.
-
-      @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
+      @with_pinyin = validate { :with_pinyin }
+      thread_count = validate { :thread_count }
+      id           = make_hash(@words, @with_pinyin)
 
       from_queue  = Queue.new
       to_queue    = Queue.new
-      file_name   = @id
-      p file_name
+      file_name   = id
 
       if File.exist?(file_name)
         puts "examining file"
@@ -117,9 +76,9 @@ module Chinese
         @words = convert(words)
         convert(sentences).each { |s| to_queue << s }
         @not_found = convert(not_found)
-        p @words
-        p to_queue.to_a
-        p @not_found
+
+        # Remove file
+        File.unlink(file_name)
       end
 
       @words.each {|word| from_queue << word }
@@ -127,16 +86,17 @@ module Chinese
 
       Thread.abort_on_exception = false
 
-      8.times.map {
+      1.upto(thread_count).map {
         Thread.new do
 
           while(word = from_queue.pop!) do
-            count = 4
+            count = 0
 
             begin
               local_result = select_sentence(word, options)
               puts "word: #{word}"
-            # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT, Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
+              # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT,
+              # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
               pause = 4
               puts " #{e.message}. Retry in #{pause} second(s)."
@@ -163,7 +123,7 @@ module Chinese
       @stored_sentences
     ensure
       if $!
-        sleep 5 # Give the threads enough time to put the word back to the queue.
+        sleep 7 # Give the threads enough time to put the word back to the queue.
 
         File.open(file_name, 'w') do |f|
           p "Writing to file..."
@@ -173,8 +133,6 @@ module Chinese
           f.puts
           f.write @not_found
         end
-      else
-        File.unlink(file_name) if File.exist?(file_name)
       end
     end
 
@@ -197,16 +155,20 @@ module Chinese
     #
     # Returns an Array of Hash objects
     def min_sentences(options = {})
-      @with_pinyin = validate(options, :with_pinyin, Validations[:with_pinyin], true)
+      @with_pinyin = validate { :with_pinyin }
       # Always run this method.
-      sentences         = sentences(options)
+      thread_count = validate { :thread_count }
+      sentences    = sentences(options)
 
       puts "Calculating the minimum necessary sentences..."
       minimum_sentences = select_minimum_necessary_sentences(sentences)
       # :uwc = 'unique words count'
       with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
       # :uws = 'unique words string'
-      with_uwc_uws_tags = add_key(with_uwc_tag, :uws) {|row| row[:target_words].sort.join(', ') }
+      with_uwc_uws_tags = add_key(with_uwc_tag, :uws) do |row|
+        words = row[:target_words].sort.join(', ')
+        "[" + words + "]"
+      end
       # Remove those keys we don't need anymore
       result            = remove_keys(with_uwc_uws_tags, :target_words, :word)
       @stored_sentences = result
@@ -291,13 +253,15 @@ module Chinese
 
     # Uses options passed from #sentences
     def select_sentence(word, options)
-      puts word
       sentence_pair = Scraper.sentence(word, options)
 
-      # If a word was not found, try again using the alternate download source:
-      alternate     = alternate_source(Scraper::Sources.keys, options[:source])
-      options       = options.merge(:source => alternate)
-      sentence_pair = Scraper.sentence(word, options)  if sentence_pair.empty?
+      # # If a word was not found, try again using the alternate download source:
+      # alternate     = alternate_source(Scraper::Sources.keys, options[:source])
+      # options       = options.merge(:source => alternate)
+      # sentence_pair = Scraper.sentence(word, options)  if sentence_pair.empty?
+
+      sources = Scraper::Sources.keys
+      sentence_pair = try_alternate_download_sources(sources, word, options)  if sentence_pair.empty?
 
       if sentence_pair.empty?
         @not_found << word
@@ -310,6 +274,25 @@ module Chinese
         result.merge!(chinese: chinese)
         result.merge!(pinyin:  chinese.to_pinyin)  if @with_pinyin
         result.merge!(english: english)
+      end
+    end
+
+
+    def try_alternate_download_sources(alternate_sources, word, options)
+      sources = alternate_sources.dup
+      sources.delete(options[:source])
+
+      result = sources.find do |s|
+        options  = options.merge(:source => s)
+        sentence = Scraper.sentence(word, options)
+        sentence.empty? ? nil : sentence
+      end
+
+      if result
+        optins = options.merge(:source => result)
+        Scraper.sentence(word, options)
+      else
+        []
       end
     end
 
@@ -354,7 +337,6 @@ module Chinese
 
 
     def sort_by_target_word_count(with_target_words)
-      puts "Internal: Sorting by target word count and sentence length..."
 
       # First sort by size of unique word array (from large to short)
       # If the unique word count is equal, sort by the length of the sentence (from small to large)

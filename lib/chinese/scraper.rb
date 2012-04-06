@@ -35,14 +35,14 @@ module Chinese
       :reorder     => lambda { |text1,text2| [text2,text1] }}
   }
 
-    Validations =  {:source =>  lambda {|value| Sources.keys.include?(value) },
-                    :size   =>  lambda {|value| [:small, :middle, :large].include?(value) }}
+  OPTIONS =  {:source =>  [:nciku,  lambda {|value| Sources.keys.include?(value) }],
+              :size   =>  [:average, lambda {|value| [:short, :average, :long].include?(value) }]}
 
 
     # Options:
-    # size => [:small, average, large], default = average
+    # size => [:short, :average, :long], default = :average
     def self.sentences(word, options={})
-      download_source = validate(options, :source, Validations[:source], :nciku)
+      download_source = validate { :source }
 
       source = Sources[download_source]
 
@@ -87,17 +87,17 @@ module Chinese
     end
 
     def self.sentence(word, options={})
-      value = validate(options, :size, Validations[:size], :small)
+      value = validate { :size }
 
       scraped_sentences = sentences(word, options)
       return [] if scraped_sentences.empty?
 
       case value
-      when :small
+      when :short
         shortest_size(scraped_sentences)
-      when :middle
+      when :average
         average_size(scraped_sentences)
-      when :large
+      when :long
         longest_size(scraped_sentences)
       end
     end

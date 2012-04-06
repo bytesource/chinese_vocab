@@ -55,15 +55,15 @@ describe Chinese::Scraper do
       # Actually the second smallest value is returned.
       specify do
         scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :small).should  == ["一二","one-two"]
+        scraper.sentence(word, :source => :nciku, :size => :short).should  == ["一二","one-two"]
       end
       specify do
         scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :middle).should == ["一二三","one-three"]
+        scraper.sentence(word, :source => :nciku, :size => :average).should == ["一二三","one-three"]
       end
       specify do
         scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :large).should  == ["一二三四五六","one-six"]
+        scraper.sentence(word, :source => :nciku, :size => :long).should  == ["一二三四五六","one-six"]
       end
 
       # If no size specified, use :small as default
@@ -102,7 +102,7 @@ describe Chinese::Scraper do
         specify { scraper.sentences(no_word, :source => :nciku).should be_empty }
         # defaults:
         # :source = :nciku
-        # :size   = small
+        # :size   = short
         specify { scraper.sentence(no_word, :source => :nciku).should be_empty }   # sentence
       end
 

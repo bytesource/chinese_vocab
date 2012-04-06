@@ -12,8 +12,8 @@ describe Chinese::Options do
     class TestClass
       include Chinese::Options
 
-      OPTIONS = {compact:    [false, lambda {|value| is_boolean?(value) }],
-                 with_pinyin: [true,     lambda {|value| puts "v: #{value} (#{value.class})"; r = is_boolean?(value); puts "r: #{r}"; r }],
+      OPTIONS = {compact:     [false,    lambda {|value| is_boolean?(value) }],
+                 with_pinyin: [true,     lambda {|value| is_boolean?(value) }],
                  size:        [:average, lambda {|value| [:short, :average, :long].include?(value) }]}
 
       def calls_validate(options={})
@@ -22,8 +22,9 @@ describe Chinese::Options do
       end
 
       def self.calls_validate(options={})
+        # @compress, @with_pinyin, @size = validate { [:compact, :with_pinyin, :size] }
         @compress, @with_pinyin, @size = validate { [:compact, :with_pinyin, :size] }
-        [@compress, @with_pinyiin, @size]
+        [@compress, @with_pinyin, @size]
       end
 
       # With errors
@@ -55,6 +56,7 @@ describe Chinese::Options do
         # Option hash
         # All options provided
         options_complete_no_defaults     = {compact: true, with_pinyin: false, size: :short}
+        options_not_complete_no_defaults = {with_pinyin: false, size: :short}  # :compact not passed
         options_includes_unsupported_key = {compact: true, with_pinyin: false, size: :short, unsupported: ''}
         options_no_keys                  = {}
         options_with_invalid_value       = {compact: true, with_pinyin: false, size: 'invalid'}
@@ -99,17 +101,53 @@ describe Chinese::Options do
 
       context "On success" do
 
-        it "should return the validated values, using the default value if a key is passed to 'validate'
-            is not part of the option hash" do
+        context "When ALL keys in the block are found in the 'options' variable" do
 
-              TestClass.calls_validate(options_complete_no_defaults).should     == [:true, false, :short]
-              #                                                                     [true, nil, :short]
-              # TestClass.new.calls_validate(options_complete_no_defaults).should == true
+          it "should return the values in options" do
+
+            TestClass.calls_validate(options_complete_no_defaults).should     == [true, false, :short]
+            TestClass.new.calls_validate(options_complete_no_defaults).should == true
+          end
+
+          context "When a key in the block is NOT found in the 'options' variable" do
+
+            it "should return the values in options for all keys found in 'options', and return the default value otherwise" do
+
+              TestClass.calls_validate(options_not_complete_no_defaults).should     == [false, false, :short]
+              TestClass.new.calls_validate(options_not_complete_no_defaults).should == false
+
+              TestClass.calls_validate(options_no_keys).should     == [false, true, :average]
+              TestClass.new.calls_validate(options_no_keys).should == false
             end
+          end
+
+          context "When an unknown key is passed in the 'options' variable" do
+
+            it "should ignore the unknown key and only handle the supported keys" do
+
+              TestClass.calls_validate(options_includes_unsupported_key).should     == [true, false, :short]
+              TestClass.new.calls_validate(options_includes_unsupported_key).should == true
+            end
+          end
+
+        end
       end
     end
 
-     context :is_boolean? do
+    context :extract_options do
+
+      it "it should return a copy of the hash with the keys passed as an array (if present in hash)" do
+
+        hash = {a: 'a', b: 'b', c: 'c', d: 'd', e: 'e'}
+        keys = [:b, :c, :d, :z]
+
+        TestClass.extract_options(keys, hash).should     ==  {b: 'b', c: 'c', d: 'd'}
+        TestClass.new.extract_options(keys, hash).should ==  {b: 'b', c: 'c', d: 'd'}
+      end
+    end
+
+
+    context :is_boolean? do
 
       specify {TestClass.is_boolean?(true).should be_true }
       specify {TestClass.is_boolean?(false).should be_true }
@@ -117,7 +155,7 @@ describe Chinese::Options do
       specify {TestClass.is_boolean?(:true).should be_false }
     end
 
-     context :is_unicode? do
+    context :is_unicode? do
 
       ascii   = ["hello, ....", "This is perfect!"]
       chinese = ["U盘", "X光", "周易衡"]

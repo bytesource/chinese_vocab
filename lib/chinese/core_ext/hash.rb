@@ -34,6 +34,8 @@ end
 
 # hash = {a: 1, b: 2, c: 3, d: 4}
 # p hash.slice(:a, :b, :z)
+# arr = [:a, :b]
+# p hash.slice(*arr)
 # p hash
 # puts "==================="
 # p hash.slice!(:a, :b, :z)

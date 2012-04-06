@@ -48,44 +48,48 @@ module Chinese
 
       keys = []
       case argument
-      when Symbol, String  # single key
+      when Symbol, String  # Single key
         keys = [argument]
-      when Array   # array of keys
+      when Array           # Array of keys
         keys = argument
-      else
+      else                 # Wrong type => raise exception
         raise ArgumentError,
           "Invalid argument '#{argument}'. \nYou can either pass a single key (Symbol) or several keys (Array of Symbols)."
       end
 
       constant = eval("OPTIONS", block.binding)
-      options  = eval("options", block.binding)
-      # constant = block.binding.eval("OPTIONS")
+      options  = eval("options", block.binding) # Alternative: constant = block.binding.eval("OPTIONS")
 
       values = keys.map do |key|
         key = key.to_sym
         # Raise exception if 'key' is NOT a key in the OPTIONS constant.
         raise ArgumentError, "Key '#{key}' not found in OPTIONS" unless constant.keys.include?(key)
 
-        # If 'key' was not passed as a parameter, return its default value.
-        default_value = constant[key][0]
-        return default_value  unless options.has_key?(key)
-
-        value = options[key]
-        # Check if 'value' is a valid value.
-        validation = constant[key][1]
-        if validation.call(value)
-          "key: #{key}, value: #{value}"
-        else
-          raise ArgumentError, "'#{value}' (#{value.class}) is not a valid value for key '#{key}'."
+        if options.has_key?(key) # Supported key in block found in options => extract its value from options.
+          value = options[key]
+          # Check if 'value' is a valid value.
+          validation = constant[key][1]
+          if validation.call(value)    # Validation passed => return value from options
+            value
+          else                         # Validation failed => raise exception
+            raise ArgumentError, "'#{value}' (#{value.class}) is not a valid value for key '#{key}'."
+          end
+        else # Supported key in block not found in options => return its default value.
+          default_value = constant[key][0]
+          default_value
         end
       end
 
-      if values.size > 1
+      if values.size > 1 # More than one return value => return array
         values
-      else
+      else               # Single return value => return value
         values[0]
       end
+    end
 
+
+    def extract_options(arr, options)
+      options.slice(*arr)
     end
 
 

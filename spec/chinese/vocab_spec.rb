@@ -56,13 +56,11 @@ describe Chinese::Vocab do
     end
 
     context :new_make_hash do
-      obj1 = described_class.new(["豆浆"])
-      obj2 = described_class.new(["豆浆"])
-      obj1.id.should == obj2.id
 
-      obj4 = described_class.new(["豆浆"], :compress => true)
-      obj5 = described_class.new(["豆浆"], :compress => true)
-      obj4.id.should == obj5.id
+      obj = described_class.new([''])
+      hash1 = obj.make_hash(["豆浆"], true)
+      hash2 = obj.make_hash(["豆浆"], true)
+      hash1.should == hash2
 
     end
 
@@ -90,7 +88,7 @@ describe Chinese::Vocab do
         vocab.not_found.include?("罗飞科").should be_true
       end
       specify do
-        vocab.select_sentence("浮鞋", {}).should == {:word=>"浮鞋", :chinese=>"舌型浮鞋", :english=>"flapper float shoe"}
+        vocab.select_sentence("浮鞋", {}).should == {:word=>"浮鞋", :chinese=>"套管浮鞋", :english=>"casing float shoe"}
         vocab.not_found.include?("浮鞋").should be_false
         # vocab.with_pinyin  # is always nil because @with_pinyin gets set in #senteces,
         # but here #select sentence is called in isolation.
@@ -109,7 +107,7 @@ describe Chinese::Vocab do
         # but returns a result on the second one (:jukuu).
         # Therefore the following must not return an empty array:
         new_vocab.sentences.should ==
-          [{:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"shé xíng fú xié", :english=>"flapper float shoe"}]
+          [{:word=>"浮鞋", :chinese=>"套管浮鞋", :pinyin=>"tào guăn fú xié", :english=>"casing float shoe"}]
         # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
         #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le
         #   "I have no change except for this high denomination banknote."]]
@@ -119,11 +117,16 @@ describe Chinese::Vocab do
       with_switched_output = ["嗯"] # With this character, the Chinese sentence is attached to the css target of the English sentence.
       test_vocab = described_class.new(with_switched_output)
 
-      test_vocab.sentences.should ==
-        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", :pinyin=>"ēn ，wŏ yào yī bēi bīng kĕ lè ！",
-          :english=>"Um, I ordered my coke cold!"}]
-      test_vocab.sentences(:with_pinyin => false).should ==
-        [{:word=>"嗯", :chinese=>"嗯，我要一杯冰可乐！", :english=>"Um, I ordered my coke cold!"}]
+      test_vocab.sentences(:size => :long).should ==
+        [{:word=>"嗯",
+          :chinese=>"嗯，如果宇宙中有一个明亮的中心的话，你就在离它最远的那个星球上",
+          :pinyin=>"ēn ，rú guŏ yŭ zhòu zhōng yŏu yī gè míng liàng de zhōng xīn de huà ，nĭ jiù zài lí tā zuì yuăn de nă gè xīng qiú shàng",
+          :english=>"Well, if there's a bright centre to the universe,  you're on the planet that it's farthest from."}]
+      test_vocab.sentences(:size => :long, :with_pinyin => false).should ==
+        [{:word=>"嗯",
+          :chinese=>"嗯，如果宇宙中有一个明亮的中心的话，你就在离它最远的那个星球上",
+          :english=>"Well, if there's a bright centre to the universe,  you're on the planet that it's farthest from."}]
+
 
       end
 
@@ -224,7 +227,7 @@ describe Chinese::Vocab do
 
     context :select_minimum_necessary_sentences do
 
-      obj = described_class.new(words, :compress => true)
+      obj = described_class.new(words, :compact => true)
       s = obj.sentences
       with_target_words = obj.add_target_words(s)
       sorted_by_target_word_count = obj.sort_by_target_word_count(with_target_words)
