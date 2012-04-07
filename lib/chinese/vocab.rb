@@ -14,15 +14,39 @@ module Chinese
   class Vocab
     include Options
 
-    attr_reader :words, :compact, :chinese, :not_found, :with_pinyin, :stored_sentences
+    attr_reader :words
+    #@return [Boolean] the value of the _:compact_ options key.
+    attr_reader :compact
+    #@return [Array<String>] holds those Chinese words from {#words} that could not be found in any
+    # of the supported online dictionaries during a call to either {#sentences} or {#min_sentences}.
+    # Defaults to `[]`.
+    attr_reader :not_found
+    #@return [Boolean] the value of the _:with_pinyin_ option key.
+    attr_reader :with_pinyin
+    #@return [Array<Hash>] holds the return value of either {#sentences} or {#min_sentences},
+    #  whichever was called last. Defaults to `[]`.
+    attr_reader :stored_sentences
 
+    # Mandatory constant for the {Options} module. Each key-value pair is of the following type:
+    #  :option => [default_value, validation]
     OPTIONS = {:compact      => [false, lambda {|value| is_boolean?(value) }],
                :with_pinyin  => [true,  lambda {|value| is_boolean?(value) }],
                :thread_count => [8,     lambda {|value| value.kind_of?(Integer) }]}
 
-
+    # Intializes an object.
+    # @overload initialize(word_array, options)
+    #  @param [Array<String>] word_array An array of Chinese words that is stored in {#words} after
+    #   all non-ascii, non-unicode characters have been stripped and double entries removed.
+    #  @param [Hash] options The options to customize the following feature.
+    #  @option options [Boolean] :compact Whether or not to remove all single character words that
+    #   also appear in at least one multi character word.
+    #   The reason behind this option is to remove redundancy by focusing on learning
+    #   distinct characters.
+    #   Defaults to `false`.
+    # @overload initialize(word_array)
+    # @param [Array<String>] word_array An array of Chinese words that is stored in {#words} after
+    #  all non-ascii, non-unicode characters have been stripped and double entries removed.
     def initialize(word_array, options={})
-      # TODO: extend 'edit_vocab to also handle English text properly (e.g. remove 'somebody', 'someone', 'so', 'to do sth' etc)
       @compact = validate { :compact }
       @words    = edit_vocab(word_array)
       @words    = remove_redundant_single_char_words(@words)  if @compact
@@ -136,24 +160,47 @@ module Chinese
       end
     end
 
-
-    # options - The Hash options used to refine the selection (default: {}):
-    #           :color  - The String color to restrict by (optional).
-    #           :weight - The Float weight to restrict by. The weight should
-    #                     be specified in grams (optional).
-
-    # Public: Select the minimum number of sentences necessary to cover all word characters.
+    # For each Chinese word in {#words} downloads a Chinese sentence and its English translation
+    # from an online dictionary, then calculates and the minimum number of sentences
+    # necessary to cover every word in {#words} at least once.
+    # The calculation is based on the fact that many words occur in more than one sentence.
     #
-    # options - The Hash options used to refine the selection (default: {}):
-    #           :with_pinyin - The Boolean to decide if the pinyin representation of a Chinese sentence
-    #                          should be returned, too (default: true)
+    # @note In case of a network error during dowloading the sentences the data fetched
+    #  so far is automatically copied to a file after several retries. This data is read and
+    #  processed on the next run to reduce the time spend with downloading the sentences
+    #  (which is by far the most time-consuming part).
+    # @overload min_sentences(options)
+    #  @param [Hash] options The options to customize the following features.
+    #  @option options [Symbol] :source The online dictionary to download the sentences from,
+    #    either [:nciku](http://www.nciku.com) or [:jukuu](http://www.jukuu.com).
+    #    Defaults to *:nciku*.
+    #  @option options [Symbol] :size The size of the sentence to return from a possible set of
+    #    several sentences. Supports the values *:short*, *:average*, and *:long*.
+    #    Defaults to *:short*.
+    #  @option options [Boolean] :with_pinyin Whether or not to return the pinyin representation
+    #    of a sentence.
+    #    Defaults to `true`.
+    #  @option options [Integer] :thread_count The number of threads used to download the sentences.
+    #    Defaults to `8`.
+    # @return [Array<Hash>, []] By default each hash holds the following key-value pairs (The return value is also stored in {#stored_sentences}.):
     #
-    # Examples
+    #    * :chinese => Chinese sentence
+    #    * :english => English translation
+    #    * :pinyin  => Pinyin
+    #    * :uwc     => Unique words count tag (String) of the form "x_words",
+    #      where *x* denotes the number of unique words from {#words} found in the sentence.
+    #    * :uws     => Unique words string tag (String) of the form "[词语1，词语2，...]",
+    #      where *词语* denotes the actual word(s) from {#words} found in the sentence.
+    #   The return value is also stored in {#stored_sentences}.
+    # @example
+    #  # Array of Chinese words.
+    #  words = "["我", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
     #
-    #   min_sentenes(:pinyin => false)
-    #   #
+    #  # Initialize Anki::Chinese with word array.
+    #  vocabulary = Anki::Chinese.new(words)
     #
-    # Returns an Array of Hash objects
+    #  # Return minimum necessary sentences.
+    #  vocabulary.min_sentences(:size => small)
     def min_sentences(options = {})
       @with_pinyin = validate { :with_pinyin }
       # Always run this method.
