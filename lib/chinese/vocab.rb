@@ -7,12 +7,14 @@ require 'csv'
 require 'string_to_pinyin'
 require 'chinese/scraper'
 require 'chinese/modules/options'
+require 'chinese/modules/helper_methods'
 require 'chinese/core_ext/hash'
 require 'chinese/core_ext/queue'
 
 module Chinese
   class Vocab
     include Options
+    include HelperMethods
 
     attr_reader :words
     #@return [Boolean] the value of the _:compact_ options key.
@@ -28,7 +30,7 @@ module Chinese
     attr_reader :stored_sentences
 
     # Mandatory constant for the {Options} module. Each key-value pair is of the following type:
-    #  :option => [default_value, validation]
+    #  option_key => [default_value, validation]
     OPTIONS = {:compact      => [false, lambda {|value| is_boolean?(value) }],
                :with_pinyin  => [true,  lambda {|value| is_boolean?(value) }],
                :thread_count => [8,     lambda {|value| value.kind_of?(Integer) }]}
@@ -82,13 +84,35 @@ module Chinese
       }
     end
 
-
+    # For every Chinese word in {#words} fetches a Chinese sentence and its English translation
+    # from an online dictionary,
+    # @note (see #min_sentences)
+    # @overload (see #min_sentences)
+    # @return [Hash] By default each hash holds the following key-value pairs (The return value is also stored in {#stored_sentences}.):
+    #
+    #    * :chinese => Chinese sentence
+    #    * :english => English translation
+    #    * :pinyin  => Pinyin
+    #   The return value is also stored in {#stored_sentences}.
+    # @example
+    #  # Array of Chinese words.
+    #  words = "["我", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
+    #
+    #  # Initialize Chinese::Vocab with word array.
+    #  vocabulary = Chinese::Vocab.new(words)
+    #
+    #  vocabulary.sentences(:size => small)
     def sentences(options={})
       puts "Fetching sentences..."
       # Always run this method.
+
+      # We assign all options to a variable here (also those that are passed on)
+      # as we need them in order to calculate the id.
       @with_pinyin = validate { :with_pinyin }
+      source       = validate { :source }
+      size         = validate { :size }
       thread_count = validate { :thread_count }
-      id           = make_hash(@words, @with_pinyin)
+      id           = make_hash(@words, @with_pinyin, source, size, thread_count)
 
       from_queue  = Queue.new
       to_queue    = Queue.new
@@ -152,15 +176,13 @@ module Chinese
         File.open(file_name, 'w') do |f|
           p "Writing to file..."
           f.write from_queue.to_a
-          f.puts
           f.write to_queue.to_a
-          f.puts
           f.write @not_found
         end
       end
     end
 
-    # For each Chinese word in {#words} downloads a Chinese sentence and its English translation
+    # For every Chinese word in {#words} fetches a Chinese sentence and its English translation
     # from an online dictionary, then calculates and the minimum number of sentences
     # necessary to cover every word in {#words} at least once.
     # The calculation is based on the fact that many words occur in more than one sentence.
@@ -196,8 +218,8 @@ module Chinese
     #  # Array of Chinese words.
     #  words = "["我", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
     #
-    #  # Initialize Anki::Chinese with word array.
-    #  vocabulary = Anki::Chinese.new(words)
+    #  # Initialize Chinese::Vocab with word array.
+    #  vocabulary = Chinese::Vocab.new(words)
     #
     #  # Return minimum necessary sentences.
     #  vocabulary.min_sentences(:size => small)
@@ -469,18 +491,6 @@ module Chinese
     end
 
 
-    # def is_unicode?(word)
-    #   puts "Unicode check..."
-    #   # Remove all non-ascii and non-unicode word characters
-    #   word = distinct_words(word).join
-    #   # English text at this point only contains characters that are mathed by \w
-    #   # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
-    #   # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
-    #   char_arr = word.scan(/\w/)
-    #   char_arr.size < word.size
-    # end
-
-
     # Input:
     # column: word column number (counting from 1)
     # row   : Array of the processed CSV data that contains our word column.
@@ -503,15 +513,6 @@ module Chinese
       characters = distinct_words(word)
       characters.all? {|char| sentence.include?(char) }
     end
-
-
-    # # Input: "除了。。。 以外。。。"
-    # # Outout: ["除了", "以外"]
-    # def distinct_words(word)
-    #   # http://stackoverflow.com/a/3976004
-    #   # Alternative: /[[:word:]]+/
-    #   word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
-    # end
 
   end
 end

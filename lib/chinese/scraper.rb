@@ -4,10 +4,12 @@ require 'open-uri'
 require 'nokogiri'
 require 'chinese/core_ext/array'
 require 'chinese/modules/options'
+require 'chinese/modules/helper_methods'
 
 module Chinese
   class Scraper
     include Options
+    include HelperMethods
 
     attr_reader   :source, :word
     attr_accessor :sentences
@@ -104,27 +106,8 @@ module Chinese
 
 
     # ===================
-    # Helper functions
+    # Helper methods
     # ===================
-
-    # def self.is_unicode?(word)
-    #   puts "Unicode check..."
-    #   # Remove all non-ascii and non-unicode word characters
-    #   word = distinct_words(word).join
-    #   # English text at this point only contains characters that are mathed by \w
-    #   # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
-    #   # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
-    #   char_arr = word.scan(/\w/)
-    #   char_arr.size < word.size
-    # end
-
-    # # Input: "除了。。。 以外。。。"
-    # # Outout: ["除了", "以外"]
-    # def self.distinct_words(word)
-    #   # http://stackoverflow.com/a/3976004
-    #   # Alternative: /[[:word:]]+/
-    #   word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
-    # end
 
     def self.pair_with_empty_string?(pair)
       pair[0].empty? || pair[1].empty?

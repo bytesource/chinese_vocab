@@ -4,41 +4,44 @@ module Chinese
   module Options
 
     # In order to be able to validate options in both
-    # instance and singleton methods
-    # The following method makes sure that a call to
-    # include Chinese::Options makes a available all module
-    # method as both instance and singleton methods.
+    # instance and singleton methods,
+    # the following method makes sure that all module methods are available
+    # as both instance and singleton methods.
     def self.included(klass)
       klass.extend(self)
     end
 
-    # def __validation_constant__
-    #   # If self.class equals Class, then self is not an instance of a class
-    #   # (except for class Class of course),
-    #   # which means we are inside a sigleton method.
-    #   if self.class == Class
-    #     self::Validations
-    #   else  # self is an instance of a class
-    #     self.class::Validations
+
+    # Validates the options passed in the block.
+    #  Options can either be a single option key or an array of options keys.
+    #  Option keys and their values are validated based on the information given in a
+    #  mandatory constant called `OPTIONS`. Keys from a methods `options` has that are not listed in `OPTIONS` are ignored.
+    # @note A class that includes this module is required to:
+    #
+    #  * have a constant named `OPTIONS` with a hash of the following type:
+    #   `{ option_key => [default_value, validation_proc], ...}`.
+    #  * to name the optional option hash of a method `options`.
+    # @example
+    #   class TestClass
+    #     include 'Options'
+    #
+    #     # option_key => [default_value, validation_proc]
+    #     OPTIONS = {:compact      => [false, lambda {|value| is_boolean?(value) }],
+    #                :with_pinyin  => [true,  lambda {|value| is_boolean?(value) }],
+    #                :thread_count => [8,     lambda {|value| value.kind_of?(Integer) }]}
+    #
+    #     def test_method_1(options={})
+    #       @thread_count = validate { :thread_count }
+    #       # ...
+    #     end
+    #
+    #     def self.test_method_2(options={})
+    #       @compact, @with_pinyin = validate { [:compact, :with_pinyin] }
+    #       # ...
+    #     end
+    #
+    #     #...
     #   end
-    # end
-
-
-    # # Example usage:
-    # # validate(:source, options, lambda {|val| [:nciku, :jukuu].include?(val) }, :nciku)
-    # def validate(options, key, validation=__validation_constant__[key], default_value)
-    #   # If key was not passed as a parameter, return its default value.
-    #   return default_value  unless options.has_key?(key)
-
-    #   value = options[key]
-    #   # Check if 'value' is a valid value.
-    #   if validation.call(value)
-    #     value
-    #   else
-    #     raise ArgumentError, "'#{value}' is not a valid value for option :#{key}."
-    #   end
-    # end
-
     def validate(&block)
       raise ArgumentError, "No block given" unless block
 
@@ -46,22 +49,12 @@ module Chinese
       # Raise exception if the block is empty.
       raise ArgumentError, "Block is empty"  if argument.nil?
 
-      keys = []
-      case argument
-      when Symbol, String  # Single key
-        keys = [argument]
-      when Array           # Array of keys
-        keys = argument
-      else                 # Wrong type => raise exception
-        raise ArgumentError,
-          "Invalid argument '#{argument}'. \nYou can either pass a single key (Symbol) or several keys (Array of Symbols)."
-      end
+      keys = Array(argument) # Wrap single key as array. If passed an array, just return the array.
 
       constant = eval("OPTIONS", block.binding)
       options  = eval("options", block.binding) # Alternative: constant = block.binding.eval("OPTIONS")
 
       values = keys.map do |key|
-        key = key.to_sym
         # Raise exception if 'key' is NOT a key in the OPTIONS constant.
         raise ArgumentError, "Key '#{key}' not found in OPTIONS" unless constant.keys.include?(key)
 
@@ -80,14 +73,22 @@ module Chinese
         end
       end
 
-      if values.size > 1 # More than one return value => return array
-        values
-      else               # Single return value => return value
-        values[0]
-      end
+      values.size > 1 ? values : values [0]
     end
 
-
+    # Returns a new hash from `options` based on the keys provided
+    #  in `arr`. Keys in `arr` not found in `options` are ignored.
+    #  *Use case*: When a method's options hash contains options for another method
+    #  that throws an exeption if the options hash contains keys not handled internally (Example: CSV library)
+    #  the options special to that method need to be extracted before passed as an argument.
+    # @example
+    #   def sample_method(text, options={})
+    #     @compact, @with_pinyin = validate { [:compact, :with_pinyin] }
+    #
+    #     csv_options = extract_options(CSV::DEFAULT_OPTIONS.keys, options)
+    #     csv = CSV.parse(text, csv_options)
+    #     #...
+    #   end
     def extract_options(arr, options)
       options.slice(*arr)
     end
@@ -97,31 +98,13 @@ module Chinese
     # Some useful validation methods
     # =============================
 
+    # Helper method that can be used in a validation proc.
+    # @return [true, false] Returns `true` is the argument passed is either `true` or `false`.
+    #   Returns `false` on any other argument.
     def is_boolean?(value)
       # Only true for either 'false' or 'true'
       !!value == value
     end
-
-    def is_unicode?(word)
-      # Remove all non-ascii and non-unicode word characters
-      word = distinct_words(word).join
-      # English text at this point only contains characters that are mathed by \w
-      # Chinese text at this point contains mostly/only unicode word characters that are not matched by \w.
-      # In case of Chinese text the size of 'char_arr' therefore has to be smaller than the size of 'word'
-      char_arr = word.scan(/\w/)
-      char_arr.size < word.size
-    end
-
-    # Input: "除了。。。 以外。。。"
-    # Outout: ["除了", "以外"]
-    def distinct_words(word)
-      # http://stackoverflow.com/a/3976004
-      # Alternative: /[[:word:]]+/
-      word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
-    end
-
-
-
 
   end
 end

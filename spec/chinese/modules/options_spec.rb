@@ -33,10 +33,10 @@ describe Chinese::Options do
         @compress
       end
 
-      def calls_validate_wrong_type(options={})
-        @compress = validate { {:compact => true} }
-        @compress
-      end
+      # def calls_validate_wrong_type(options={})
+      #   @compress = validate { {:compact => true} }
+      #   @compress
+      # end
     end
   end
 
@@ -84,12 +84,12 @@ describe Chinese::Options do
           end.should raise_exception(ArgumentError, /'a string' not found in OPTIONS/)
         end
 
-        it "should raise an exception if the argument has the wrong type" do
+        # it "should raise an exception if the argument has the wrong type" do
 
-          lambda do
-            TestClass.new.calls_validate_wrong_type
-          end.should raise_exception(ArgumentError, /Invalid argument '{:compact=>true}'/)
-        end
+        #   lambda do
+        #     TestClass.new.calls_validate_wrong_type
+        #   end.should raise_exception(ArgumentError, /Invalid argument '{:compact=>true}'/)
+        # end
 
         it "should raise an exception if a key value is invalid" do
 
@@ -145,6 +145,7 @@ describe Chinese::Options do
         TestClass.new.extract_options(keys, hash).should ==  {b: 'b', c: 'c', d: 'd'}
       end
     end
+
 
 
     context :is_boolean? do

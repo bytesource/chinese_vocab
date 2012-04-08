@@ -163,12 +163,6 @@ describe Chinese::Vocab do
 
     end
 
-    context :distinct_words do
-
-      specify { vocab.distinct_words(words[5]).should == ["越", "来越"] }
-      specify { vocab.distinct_words(words[6]).should == ["除了", "以外"] }
-
-    end
 
     context :include_every_char? do
 
