@@ -41,13 +41,14 @@ module Chinese
     #   all non-ascii, non-unicode characters have been stripped and double entries removed.
     #  @param [Hash] options The options to customize the following feature.
     #  @option options [Boolean] :compact Whether or not to remove all single character words that
-    #   also appear in at least one multi character word.
+    #   also appear in at least one multi character word. Example: (["看", "看书"] => [看书])
     #   The reason behind this option is to remove redundancy by focusing on learning
     #   distinct characters.
     #   Defaults to `false`.
     # @overload initialize(word_array)
     # @param [Array<String>] word_array An array of Chinese words that is stored in {#words} after
     #  all non-ascii, non-unicode characters have been stripped and double entries removed.
+    # @example (see #sentences_unique_chars)
     def initialize(word_array, options={})
       @compact = validate { :compact }
       @words    = edit_vocab(word_array)
@@ -58,12 +59,18 @@ module Chinese
     end
 
 
-    # Input:
-    # path_to_csv: Path to CSV file
-    # word_col   : Number of the word column we want to extract.
-    # options    : Options used by the CSV class
-    # Output:
-    # Array of strings, where each string is a word from the CSV file.
+    # Extracts the vocabulary column from a CSV file as an array of strings. The array is
+    #   normally provided as an argument to {#initialize}
+    # @overload parse_words(path_to_csv, word_col, options)
+    #  @param [String] path_to_csv The relative or full path to the CSV file.
+    #  @param [Integer] word_col The column number of the vocabulary column (counting starts at 1).
+    #  @param [Hash] options The [supported options](http://ruby-doc.org/stdlib-1.9.3/libdoc/csv/rdoc/CSV.html#method-c-new) of Ruby's CSV library as well as the `:encoding` parameter.
+    #    Exceptions: `:encoding` is always set to `utf-8` and `:skip_blanks` to `true`.
+    # @overload parse_words(path_to_csv, word_col)
+    #  @param [String] path_to_csv The relative or full path to the CSV file.
+    #  @param [Integer] word_col The column number of the vocabulary column (counting starts at 1).
+    # @return [Array<String>] The vocabluary (Chinese words)
+    # @example (see #sentences_unique_chars)
     def self.parse_words(path_to_csv, word_col, options={})
       # Enforced options:
       # encoding: utf-8 (necessary for parsing Chinese characters)
@@ -84,10 +91,25 @@ module Chinese
       }
     end
 
+
     # For every Chinese word in {#words} fetches a Chinese sentence and its English translation
     # from an online dictionary,
+    # @note (Normally you only call this method directly if you really need one sentence
+    #  per Chinese word (even if these words might appear in more than one of the sentences.).
     # @note (see #min_sentences)
-    # @overload (see #min_sentences)
+    # @overload sentences(options)
+    #  @param [Hash] options The options to customize the following features.
+    #  @option options [Symbol] :source The online dictionary to download the sentences from,
+    #    either [:nciku](http://www.nciku.com) or [:jukuu](http://www.jukuu.com).
+    #    Defaults to *:nciku*.
+    #  @option options [Symbol] :size The size of the sentence to return from a possible set of
+    #    several sentences. Supports the values *:short*, *:average*, and *:long*.
+    #    Defaults to *:short*.
+    #  @option options [Boolean] :with_pinyin Whether or not to return the pinyin representation
+    #    of a sentence.
+    #    Defaults to `true`.
+    #  @option options [Integer] :thread_count The number of threads used to download the sentences.
+    #    Defaults to `8`.
     # @return [Hash] By default each hash holds the following key-value pairs (The return value is also stored in {#stored_sentences}.):
     #
     #    * :chinese => Chinese sentence
@@ -95,12 +117,17 @@ module Chinese
     #    * :pinyin  => Pinyin
     #   The return value is also stored in {#stored_sentences}.
     # @example
-    #  # Array of Chinese words.
-    #  words = "["我", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
+    #  require 'chinese_vocab'
     #
-    #  # Initialize Chinese::Vocab with word array.
-    #  vocabulary = Chinese::Vocab.new(words)
+    #  # Extract the Chinese words from a CSV file.
+    #  words = Chinese::Vocab.parse_words('path/to/file/hsk.csv', 4)
     #
+    #  # Initialize Chinese::Vocab with word array
+    #  # :compress => true means single character words are that also appear in multi-character
+    #  # words are removed from the word array (["看", "看书"] => [看书])
+    #  vocabulary = Chinese::Vocab.new(words, :compress => true)
+    #
+    #  # Return a sentence for each word
     #  vocabulary.sentences(:size => small)
     def sentences(options={})
       puts "Fetching sentences..."
@@ -109,10 +136,8 @@ module Chinese
       # We assign all options to a variable here (also those that are passed on)
       # as we need them in order to calculate the id.
       @with_pinyin = validate { :with_pinyin }
-      source       = validate { :source }
-      size         = validate { :size }
       thread_count = validate { :thread_count }
-      id           = make_hash(@words, @with_pinyin, source, size, thread_count)
+      id           = make_hash(@words, options.to_a.sort)
 
       from_queue  = Queue.new
       to_queue    = Queue.new
@@ -214,15 +239,7 @@ module Chinese
     #    * :uws     => Unique words string tag (String) of the form "[词语1，词语2，...]",
     #      where *词语* denotes the actual word(s) from {#words} found in the sentence.
     #   The return value is also stored in {#stored_sentences}.
-    # @example
-    #  # Array of Chinese words.
-    #  words = "["我", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
-    #
-    #  # Initialize Chinese::Vocab with word array.
-    #  vocabulary = Chinese::Vocab.new(words)
-    #
-    #  # Return minimum necessary sentences.
-    #  vocabulary.min_sentences(:size => small)
+    # @example (see #sentences_unique_chars)
     def min_sentences(options = {})
       @with_pinyin = validate { :with_pinyin }
       # Always run this method.
@@ -245,7 +262,35 @@ module Chinese
     end
 
 
+    # Finds the unique Chinese characters from either the data in {#stored_sentences} or an
+    # array of Chinese sentences passed as an argument.
+    # @overload sentences_unique_chars(sentences)
+    #  @param [Array<String>, Array<Hash>] sentences An array of chinese sentences or an array of hashes with the key `:chinese`.
+    # @note If no argument is passed, the data from {#stored_sentences} is used as input
+    # @return [Array<String>] The unique Chinese characters
+    # @example
+    #  require 'chinese_vocab'
+    #
+    #  # Extract the Chinese words from a CSV file.
+    #  words = Chinese::Vocab.parse_words('path/to/file/hsk.csv', 4)
+    #
+    #  # Initialize Chinese::Vocab with word array
+    #  # :compress => true means single character words are that also appear in multi-character
+    #  # words are removed from the word array (["看", "看书"] => [看书])
+    #  vocabulary = Chinese::Vocab.new(words, :compress => true)
+    #
+    #  # Return minimum necessary sentences.
+    #  vocabulary.min_sentences(:size => small)
+    #
+    #  # See how what are the unique characters in all these sentences.
+    #  vocabulary.sentences_unique_chars(my_sentences)
+    #  # => ["我", "们", "跟", "他", "是", "好", "朋", "友", ...]
+    #
+    #  # Save to file
+    #  vocabulary.to_csv('path/to_file/vocab_sentences.csv')
     def sentences_unique_chars(sentences = stored_sentences)
+      # If the argument is an array of hashes, then it must be the data from @stored_sentences
+      sentences = sentences.map { |hash| hash[:chinese] }  if sentences[0].kind_of?(Hash)
 
       sentences.reduce([]) do |acc, row|
         acc = acc | row.scan(/\p{Word}/) # only return characters, skip punctuation marks
@@ -254,6 +299,14 @@ module Chinese
     end
 
 
+    # Saves the data stored in {#stored_sentences} to disk.
+    # @overload to_csv(path_to_file, options)
+    #  @param [String] path_to_file file name and path of where to save the file.
+    #  @param [Hash] options The [supported options](http://ruby-doc.org/stdlib-1.9.3/libdoc/csv/rdoc/CSV.html#method-c-new) of Ruby's CSV library.
+    # @overload to_csv(path_to_file)
+    #  @param [String] path_to_file file name and path of where to save the file.
+    # @return [void]
+    # @example (see #sentences_unique_chars)
     def to_csv(path_to_file, options = {})
 
       CSV.open(path_to_file, "w", options) do |csv|
@@ -266,7 +319,6 @@ module Chinese
 
     # Helper functions
     # -----------------
-
     def remove_parens(word)
       # 1) Remove all ASCII parens and all data in between.
       # 2) Remove all Chinese parens and all data in between.

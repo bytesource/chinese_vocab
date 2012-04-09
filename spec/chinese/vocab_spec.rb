@@ -53,15 +53,24 @@ describe Chinese::Vocab do
       edited_words = ["看书", "玩球","看","书","玩","球"]
 
       specify { vocab.remove_redundant_single_char_words(edited_words).should == ["看书", "玩球"] }
+
+      test_vocab = described_class.new(edited_words, :compact => true)
+      specify { test_vocab.words.should == ["看书", "玩球"] }
     end
 
-    context :new_make_hash do
+    context :make_hash do
+
+      ops1 = {:source => :nciku, :size => :large, :with_pinyin => true}
+      ops2 = {:size => :large, :with_pinyin => true, :source => :nciku}
 
       obj = described_class.new([''])
-      hash1 = obj.make_hash(["豆浆"], true)
-      hash2 = obj.make_hash(["豆浆"], true)
-      hash1.should == hash2
+      hash1 = obj.make_hash(["豆浆"], ops1)
+      hash2 = obj.make_hash(["豆浆"], ops2)
+      hash1.should_not == hash2
 
+      hash1 = obj.make_hash(["豆浆"], ops1.to_a.sort)
+      hash2 = obj.make_hash(["豆浆"], ops2.to_a.sort)
+      hash1.should == hash2
     end
 
     context :remove_parens do
@@ -309,7 +318,8 @@ describe Chinese::Vocab do
       # Without an argument uses @stored_sentences as input.
       specify do
         # Create a stub:
-        vocab.stub(:stored_sentences) { ["我们跟他们是好朋友。","你你你你你你"] }
+        sentences = [{chinese: "我们跟他们是好朋友。"}, {chinese: "你你你你你你"}]
+        vocab.stub(:stored_sentences) { sentences }
         vocab.sentences_unique_chars.should == ["我", "们", "跟", "他", "是", "好", "朋", "友", "你"]
       end
     end
