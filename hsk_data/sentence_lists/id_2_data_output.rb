@@ -1,4 +1,4 @@
-# sentences = anki.min_sentences(:size => :short, :source => :nciku, :with_pinyin => true, :thread_count => 8)
+# sentences = anki.min_sentences(:size => :average, :source => :nciku, :with_pinyin => true, :thread_count => 8)
 #
 # Calculating the minimum necessary sentences...
 # Internal: Adding target words...
@@ -10,5 +10,5 @@
 # -----------------------------
 # Contains all words?: false.
 # Missing words (@not_found): ["来回来去", "来看来讲", "深美"]
-# Number of unique characters in sentences: 3290
+# Number of unique characters in sentences: 3240
 

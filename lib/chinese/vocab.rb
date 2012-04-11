@@ -178,8 +178,8 @@ module Chinese
               # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
               puts " #{e.message}."
-              puts "Please do NOT abort the program but wait for all #{thread_count} threads to terminate."
-              puts "Number of running threads: #{Thread.list.size - 1} (of #{thread_count})"
+              puts "Please DO NOT abort the program but wait for all threads to terminate."
+              puts "Number of running threads: #{Thread.list.size - 1}."
               puts "On termination of all threads, the data will be saved to disk for fast retrieval on the next run of the program."
               raise
 
@@ -204,12 +204,15 @@ module Chinese
         end
 
         File.open(file_name, 'w') do |f|
-          p "Writing to file..."
+          p "============================="
+          p "Writing data to file..."
           f.write from_queue.to_a
           f.puts
           f.write to_queue.to_a
           f.puts
           f.write @not_found
+          puts "Finished writing data."
+          puts "Please run the program again after solving the (connection) problem."
         end
       end
     end

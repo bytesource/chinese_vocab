@@ -2,6 +2,7 @@
 require 'cgi'
 require 'open-uri'
 require 'nokogiri'
+require 'timeout'
 require 'chinese/core_ext/array'
 require 'chinese/modules/options'
 require 'chinese/modules/helper_methods'
@@ -52,7 +53,9 @@ module Chinese
       # Note: Use + because << changes the object on its left hand side, but + doesn't:
       # http://stackoverflow.com/questions/377768/string-concatenation-and-ruby/378258#378258
       url       = source[:url] + CGI.escape(word)
-      main_node = Nokogiri::HTML(open(url)).css(source[:parent_sel]) # Returns a single node.
+      # http://ruby-doc.org/stdlib-1.9.2/libdoc/timeout/rdoc/Timeout.html#method-c-timeout
+      content   = Timeout.timeout(20) { open(url) }
+      main_node = Nokogiri::HTML(content).css(source[:parent_sel]) # Returns a single node.
       return []  if main_node.to_a.empty?
 
       # CSS selector:   Returns the tags in the order they are specified
