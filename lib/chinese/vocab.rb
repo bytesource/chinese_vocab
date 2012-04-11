@@ -150,6 +150,12 @@ module Chinese
         words = convert(words)
         convert(sentences).each { |s| to_queue << s }
         @not_found = convert(not_found)
+        puts "Size(@not_found)  = #{@not_found.size}"
+        size_a = words.size
+        size_b = to_queue.size
+        puts "Size(words)       = #{size_a}"
+        puts "Size(to_queue)    = #{size_b}"
+        puts "Size(words+queue) = #{size_a+size_b}"
 
         # Remove file
         File.unlink(file_name)
@@ -164,7 +170,6 @@ module Chinese
         Thread.new do
 
           while(word = from_queue.pop!) do
-            count = 5
 
             begin
               local_result = select_sentence(word, options)
@@ -172,16 +177,15 @@ module Chinese
               # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT,
               # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
-              pause = 4
-              puts " #{e.message}. Retry in #{pause} second(s)."
-              sleep(pause)
-              count -= 1
-              retry  if count > 0
-
+              puts " #{e.message}."
+              puts "Please do NOT abort the program but wait for all #{thread_count} threads to terminate."
+              puts "Number of running threads: #{Thread.list.size - 1} (of #{thread_count})"
+              puts "On termination of all threads, the data will be saved to disk for fast retrieval on the next run of the program."
               raise
 
             ensure
               from_queue << word  if $!
+              puts "Wrote '#{word}' to 'from_queue'"  if $!
             end
 
             to_queue << local_result  unless local_result.nil?
@@ -192,9 +196,12 @@ module Chinese
 
       @stored_sentences = to_queue.to_a
       @stored_sentences
+
     ensure
       if $!
-        sleep 10 # Give the threads enough time to put the word back to the queue.
+        while(Thread.list.size > 1) do # Wait for all child threads to terminate.
+          sleep 5
+        end
 
         File.open(file_name, 'w') do |f|
           p "Writing to file..."
@@ -206,6 +213,7 @@ module Chinese
         end
       end
     end
+
 
     # For every Chinese word in {#words} fetches a Chinese sentence and its English translation
     # from an online dictionary, then calculates and the minimum number of sentences
