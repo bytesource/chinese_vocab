@@ -84,6 +84,9 @@ module Chinese
       # 2) Nciku mostly returns sentences in the order Chinese first, English second
       #    (but sometimes it is the other way round.)
       sentence_pairs = sentence_pairs.map {|node1,node2| source[:reorder].call(node1,node2) }
+      # Only select Chinese sentences that don't separate words, e.g., skip all sentences like the following:
+      # 北边 => 树林边的河流向北方
+      sentence_pairs = sentence_pairs.select { |cn, _| include_every_char?(word, cn) }
 
       sentence_pairs
     end

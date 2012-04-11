@@ -123,9 +123,9 @@ module Chinese
     #  words = Chinese::Vocab.parse_words('path/to/file/hsk.csv', 4)
     #
     #  # Initialize Chinese::Vocab with word array
-    #  # :compress => true means single character words are that also appear in multi-character
+    #  # :compact => true means single character words are that also appear in multi-character
     #  # words are removed from the word array (["看", "看书"] => [看书])
-    #  vocabulary = Chinese::Vocab.new(words, :compress => true)
+    #  vocabulary = Chinese::Vocab.new(words, :compact => true)
     #
     #  # Return a sentence for each word
     #  vocabulary.sentences(:size => small)
@@ -138,6 +138,7 @@ module Chinese
       @with_pinyin = validate { :with_pinyin }
       thread_count = validate { :thread_count }
       id           = make_hash(@words, options.to_a.sort)
+      words        = @words
 
       from_queue  = Queue.new
       to_queue    = Queue.new
@@ -146,7 +147,7 @@ module Chinese
       if File.exist?(file_name)
         puts "examining file"
         words, sentences, not_found = File.open(file_name) { |f| f.readlines }
-        @words = convert(words)
+        words = convert(words)
         convert(sentences).each { |s| to_queue << s }
         @not_found = convert(not_found)
 
@@ -154,7 +155,7 @@ module Chinese
         File.unlink(file_name)
       end
 
-      @words.each {|word| from_queue << word }
+      words.each {|word| from_queue << word }
       result = []
 
       Thread.abort_on_exception = false
@@ -163,7 +164,7 @@ module Chinese
         Thread.new do
 
           while(word = from_queue.pop!) do
-            count = 0
+            count = 5
 
             begin
               local_result = select_sentence(word, options)
@@ -178,13 +179,10 @@ module Chinese
               retry  if count > 0
 
               raise
-            # rescue Exception => e
-            #   puts "I just catched exception: #{e}."
-            #   raise
+
             ensure
               from_queue << word  if $!
             end
-
 
             to_queue << local_result  unless local_result.nil?
 
@@ -196,12 +194,14 @@ module Chinese
       @stored_sentences
     ensure
       if $!
-        sleep 7 # Give the threads enough time to put the word back to the queue.
+        sleep 10 # Give the threads enough time to put the word back to the queue.
 
         File.open(file_name, 'w') do |f|
           p "Writing to file..."
           f.write from_queue.to_a
+          f.puts
           f.write to_queue.to_a
+          f.puts
           f.write @not_found
         end
       end
@@ -275,9 +275,9 @@ module Chinese
     #  words = Chinese::Vocab.parse_words('path/to/file/hsk.csv', 4)
     #
     #  # Initialize Chinese::Vocab with word array
-    #  # :compress => true means single character words are that also appear in multi-character
+    #  # :compact => true means single character words are that also appear in multi-character
     #  # words are removed from the word array (["看", "看书"] => [看书])
-    #  vocabulary = Chinese::Vocab.new(words, :compress => true)
+    #  vocabulary = Chinese::Vocab.new(words, :compact => true)
     #
     #  # Return minimum necessary sentences.
     #  vocabulary.min_sentences(:size => small)
@@ -338,8 +338,28 @@ module Chinese
 
       word_array.map {|word|
         edited = remove_parens(word)
+        edited = remove_slash(edited)
+        edited = remove_er_character_from_end(edited)
         distinct_words(edited).join(' ')
       }.uniq
+    end
+
+
+    def remove_er_character_from_end(word)
+      if word.size > 2
+      word.gsub(/儿$/, '')
+      else # Don't remove "儿" form words like 女儿
+        word
+      end
+    end
+
+
+    def remove_slash(word)
+      if word.match(/\//)
+        word.split(/\//).sort_by { |w| w.size }.last
+      else
+        word
+      end
     end
 
 
@@ -375,11 +395,6 @@ module Chinese
     # Uses options passed from #sentences
     def select_sentence(word, options)
       sentence_pair = Scraper.sentence(word, options)
-
-      # # If a word was not found, try again using the alternate download source:
-      # alternate     = alternate_source(Scraper::Sources.keys, options[:source])
-      # options       = options.merge(:source => alternate)
-      # sentence_pair = Scraper.sentence(word, options)  if sentence_pair.empty?
 
       sources = Scraper::Sources.keys
       sentence_pair = try_alternate_download_sources(sources, word, options)  if sentence_pair.empty?
@@ -430,6 +445,7 @@ module Chinese
       # semaphore = Mutex.new
       result      = []
       words       = @words
+      puts "add_target_words, words.size = #{words.size}"
       hash_array.each {|hash| from_queue << hash}
 
       10.times.map {
@@ -445,9 +461,7 @@ module Chinese
         end
       }.map {|thread| thread.join}
 
-      (to_queue.size).times { result << to_queue.pop }
-      result
-      # to_queue.to_a
+      to_queue.to_a
 
     end
 
@@ -481,7 +495,8 @@ module Chinese
 
       rows.each do |row|
         words = row[:target_words].dup
-        # Delete all words from 'words' that have already been encoutered (and are included in 'matched_words').
+        # Delete all words from 'words' that have already been encoutered
+        # (and are included in 'matched_words').
         words = words - matched_words
 
         if words.size > 0  # Words that where not deleted above have to be part of 'unmatched_words'.
@@ -539,7 +554,18 @@ module Chinese
         acc
       end
 
-      matched_words.size == @words.size
+      if matched_words.size == @words.size
+        true
+      else
+        puts "-----------------------------"
+        puts "#contains_all_target_words?"
+        puts "Words not found:"
+        p @words - matched_words
+        puts "-----------------------------"
+        false
+      end
+
+      #matched_words.size == @words.size
     end
 
 
@@ -556,14 +582,6 @@ module Chinese
       sources = sources.dup
       sources.delete(selection)
       sources.pop
-    end
-
-
-    # Return true if every distince word (as defined by #distinct_words)
-    # can be found in the given sentence.
-    def include_every_char?(word, sentence)
-      characters = distinct_words(word)
-      characters.all? {|char| sentence.include?(char) }
     end
 
   end

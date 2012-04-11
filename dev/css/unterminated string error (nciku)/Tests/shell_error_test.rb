@@ -29,7 +29,12 @@ en.to_pinyin
 # sh: Syntax error: Unterminated quoted string
 # => "why, that's impossible!"
 
-
 '"'.to_pinyin
 # => "\""
+
+"一次他向一个坐在树梢上把长长的尖镰刀抡向枝条的男孩高喊道：'当心点，别伤着椰枣树的心。'".to_pinyin
+# sh: Syntax error: Unterminated quoted string
+# sh: Syntax error: Unterminated quoted string
+# => "yī cì tā xiàng yī gè zuò zài shù shāo shàng bă cháng cháng de jiān lián dāo lūn xiàng zhī tiáo de nán hái gāo hăn dào ：
+#    'dāng xīn diăn ，bié shāng zhăo yé zăo shù de xīn 。'"
 

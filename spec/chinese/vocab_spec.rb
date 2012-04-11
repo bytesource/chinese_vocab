@@ -7,14 +7,6 @@ describe Chinese::Vocab do
   # NOTE:  "浮鞋" is only found on jukuu.
   words = ["我", "打", "他", "他们", "谁", "越 。。。 来越", "除了。。。 以外。。。", "浮鞋"]
 
-  sentences = ['我打他。',
-               '他打我好疼。',
-               '他打谁？',
-               '他们想知道你是谁。',
-               '他们钱越来越多。',
-               '除了饺子以外，我也很喜欢吃馒头',
-               '除了饺子之外，我也很喜欢吃馒头']
-
   context "Class methods" do
 
     # data/old_hsk_short.csv:
@@ -81,12 +73,26 @@ describe Chinese::Vocab do
       specify {vocab.remove_parens("除了。。。以外（之外）").should == "除了。。。以外" }
     end
 
+    context :remove_er_character_from_end do
+      # Only remove "儿" from the end of words of more than two characters, so we don't cut words like 女儿.
+      specify { vocab.remove_er_character_from_end("女儿").should == "女儿" }
+      specify { vocab.remove_er_character_from_end("女儿们").should == "女儿们" }
+      specify { vocab.remove_er_character_from_end("面条儿").should == "面条" }
+    end
+
+    context :remove_slash do
+
+      specify {vocab.remove_slash("订货/定货表").should == "定货表" }
+      specify {vocab.remove_slash("订货").should == "订货" }
+    end
+
     context :edit_vocab do
 
-      passed_to_initialize = ["除了。。以外(之外)", "除了。。。以外（之外）", "U盘", "U盘"]
+      passed_to_initialize =
+        ["除了。。以外(之外)", "除了。。。以外（之外）", "U盘", "U盘", "女儿", "面条儿", "订货/定货表" ]
 
       # Edit and remove duplicates
-      specify {vocab.edit_vocab(passed_to_initialize).should == ["除了 以外", "U盘"] }
+      specify {vocab.edit_vocab(passed_to_initialize).should == ["除了 以外", "U盘", "女儿", "面条", "定货表"] }
     end
 
     context :select_sentence do
@@ -172,13 +178,6 @@ describe Chinese::Vocab do
 
     end
 
-
-    context :include_every_char? do
-
-      # word: "越 来越", sentence: '他们钱越来越多。'
-      specify { vocab.include_every_char?(words[5], sentences[4]).should be_true }
-
-    end
 
     context :target_words_per_sentence do
       sentence     = '除了饺子以外，我也很喜欢吃馒头'

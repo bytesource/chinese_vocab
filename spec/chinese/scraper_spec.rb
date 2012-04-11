@@ -48,26 +48,29 @@ describe Chinese::Scraper do
 
     context :sentence do
 
-      result = [["一","one"],["一二","one-two"],["一二三","one-three"],
-                                  ["一二三四","one-four"],["一二三四五","one-five"],["一二三四五六","one-six"]]
+      context ":size option key" do
+
+        result = [["一","one"],["一二","one-two"],["一二三","one-three"],
+                  ["一二三四","one-four"],["一二三四五","one-five"],["一二三四五六","one-six"]]
 
 
-      # Actually the second smallest value is returned.
-      specify do
-        scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :short).should  == ["一二","one-two"]
-      end
-      specify do
-        scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :average).should == ["一二三","one-three"]
-      end
-      specify do
-        scraper.stub(:sentences) { result }
-        scraper.sentence(word, :source => :nciku, :size => :long).should  == ["一二三四五六","one-six"]
-      end
+        # Actually the second smallest value is returned.
+        specify do
+          scraper.stub(:sentences) { result }
+          scraper.sentence(word, :source => :nciku, :size => :short).should  == ["一二","one-two"]
+        end
+        specify do
+          scraper.stub(:sentences) { result }
+          scraper.sentence(word, :source => :nciku, :size => :average).should == ["一二三","one-three"]
+        end
+        specify do
+          scraper.stub(:sentences) { result }
+          scraper.sentence(word, :source => :nciku, :size => :long).should  == ["一二三四五六","one-six"]
+        end
 
-      # If no size specified, use :small as default
-      specify {scraper.sentence(word)  ==  ["一二","one-two"]}
+        # If no size specified, use :small as default
+        specify {scraper.sentence(word)  ==  ["一二","one-two"]}
+      end
 
     end
 
