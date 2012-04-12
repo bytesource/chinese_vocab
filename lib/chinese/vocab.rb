@@ -4,16 +4,16 @@ require 'open-uri'
 require 'nokogiri'
 require 'cgi'
 require 'csv'
+require 'with_validations'
 require 'string_to_pinyin'
 require 'chinese/scraper'
-require 'chinese/modules/options'
 require 'chinese/modules/helper_methods'
 require 'chinese/core_ext/hash'
 require 'chinese/core_ext/queue'
 
 module Chinese
   class Vocab
-    include Options
+    include WithValidations
     include HelperMethods
 
     attr_reader :words

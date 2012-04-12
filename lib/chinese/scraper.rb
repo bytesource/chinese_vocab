@@ -4,12 +4,12 @@ require 'open-uri'
 require 'nokogiri'
 require 'timeout'
 require 'chinese/core_ext/array'
-require 'chinese/modules/options'
+require 'with_validations'
 require 'chinese/modules/helper_methods'
 
 module Chinese
   class Scraper
-    include Options
+    include WithValidations
     include HelperMethods
 
     attr_reader   :source, :word
