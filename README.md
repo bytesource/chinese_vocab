@@ -6,7 +6,7 @@
 * Needs to memorize a lot of words on a __tight time schedule__.
 * Uses the spaced repetition flashcard program [Anki](http://ankisrs.net/).
 
-`Chinese::Vocab` addresses all of the above requirements by downloading sentences for each word and selecting the __minimum required number of Chinese sentences__ (and English translations) to represent all words.
+`Chinese::Vocab` addresses all of the above requirements by downloading sentences for each word and selecting the __minimum required number of Chinese sentences__ (and English translations) to __represent all words__.
 
 You can then export the sentences as well as additional tags provided by `Chinese::Vocab` to Anki.
 
@@ -72,6 +72,14 @@ p anki.sentences_unique_chars.size
 # Options:
 # Any supported option of Ruby's CSV libary
 anki.to_csv('in_the_wild_test.csv')
+# Sample output (2 sentences/lines out of 4511):
+
+# 舞台上正在上演的是吕剧。,wŭ tái shàng zhèng zài shàng yăn de shì lǚ jù 。,
+# What is being performed on the stage is Lv opera (a local opera of Shandong Province).
+# ,2_words,"[正在, 舞台]"
+# 古代官员上朝都要穿朝靴。,gŭ dài guān yuán shàng cháo dōu yào chuān cháo xuē 。,
+# "In ancient times, all courtiers had to wear special boots to enter the court.",
+# 2_words,"[古代, 官员]"
 
 ````
 
