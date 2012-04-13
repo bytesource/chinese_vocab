@@ -16,6 +16,14 @@ module Chinese
     include WithValidations
     include HelperMethods
 
+    # The list of Chinese words after calling {#edit_vocab}. Editing includes:
+    #
+    #  * Removing parentheses (with the content inside each parenthesis).
+    #  * Removing any slash (/) and only keeping the longest part.
+    #  * Removing '儿' for any word longer than two characters.
+    #  * Removing non-word characters such as points and commas.
+    #  * Removing and duplicate words.
+    #@return [Array<String>]
     attr_reader :words
     #@return [Boolean] the value of the _:compact_ options key.
     attr_reader :compact
@@ -23,27 +31,29 @@ module Chinese
     # of the supported online dictionaries during a call to either {#sentences} or {#min_sentences}.
     # Defaults to `[]`.
     attr_reader :not_found
-    #@return [Boolean] the value of the _:with_pinyin_ option key.
+    #@return [Boolean] the value of the `:with_pinyin` option key.
     attr_reader :with_pinyin
     #@return [Array<Hash>] holds the return value of either {#sentences} or {#min_sentences},
     #  whichever was called last. Defaults to `[]`.
     attr_reader :stored_sentences
 
-    # Mandatory constant for the {Options} module. Each key-value pair is of the following type:
-    #  option_key => [default_value, validation]
+    # Mandatory constant for the [WithValidations](http://rubydoc.info/github/bytesource/with_validations/file/README.md) module. Each key-value pair is of the following type:
+    #  `option_key => [default_value, validation]`
     OPTIONS = {:compact      => [false, lambda {|value| is_boolean?(value) }],
                :with_pinyin  => [true,  lambda {|value| is_boolean?(value) }],
                :thread_count => [8,     lambda {|value| value.kind_of?(Integer) }]}
 
     # Intializes an object.
+    # @note Words that are composite expressions must be written with a least one non-word
+    #   character (such as whitespace) between each sub-expression. Example: "除了 以外" or
+    #   "除了。。以外" instead of "除了以外".
     # @overload initialize(word_array, options)
     #  @param [Array<String>] word_array An array of Chinese words that is stored in {#words} after
     #   all non-ascii, non-unicode characters have been stripped and double entries removed.
     #  @param [Hash] options The options to customize the following feature.
     #  @option options [Boolean] :compact Whether or not to remove all single character words that
     #   also appear in at least one multi character word. Example: (["看", "看书"] => [看书])
-    #   The reason behind this option is to remove redundancy by focusing on learning
-    #   distinct characters.
+    #   The reason behind this option is to remove redundancy in meaning and focus on learning distinct words.
     #   Defaults to `false`.
     # @overload initialize(word_array)
     # @param [Array<String>] word_array An array of Chinese words that is stored in {#words} after
@@ -61,11 +71,12 @@ module Chinese
 
     # Extracts the vocabulary column from a CSV file as an array of strings. The array is
     #   normally provided as an argument to {#initialize}
+    # @note (see #initialize)
     # @overload parse_words(path_to_csv, word_col, options)
     #  @param [String] path_to_csv The relative or full path to the CSV file.
     #  @param [Integer] word_col The column number of the vocabulary column (counting starts at 1).
     #  @param [Hash] options The [supported options](http://ruby-doc.org/stdlib-1.9.3/libdoc/csv/rdoc/CSV.html#method-c-new) of Ruby's CSV library as well as the `:encoding` parameter.
-    #    Exceptions: `:encoding` is always set to `utf-8` and `:skip_blanks` to `true`.
+    #    Exceptions: `:encoding` is always set to `utf-8` and `:skip_blanks` to `true` internally.
     # @overload parse_words(path_to_csv, word_col)
     #  @param [String] path_to_csv The relative or full path to the CSV file.
     #  @param [Integer] word_col The column number of the vocabulary column (counting starts at 1).
@@ -145,17 +156,16 @@ module Chinese
       file_name   = id
 
       if File.exist?(file_name)
-        puts "examining file"
+        puts "Examining file..."
         words, sentences, not_found = File.open(file_name) { |f| f.readlines }
         words = convert(words)
         convert(sentences).each { |s| to_queue << s }
         @not_found = convert(not_found)
-        puts "Size(@not_found)  = #{@not_found.size}"
         size_a = words.size
         size_b = to_queue.size
-        puts "Size(words)       = #{size_a}"
-        puts "Size(to_queue)    = #{size_b}"
-        puts "Size(words+queue) = #{size_a+size_b}"
+        # puts "Size(words)       = #{size_a}"
+        # puts "Size(to_queue)    = #{size_b}"
+        # puts "Size(words+queue) = #{size_a+size_b}"
 
         # Remove file
         File.unlink(file_name)
@@ -173,19 +183,19 @@ module Chinese
 
             begin
               local_result = select_sentence(word, options)
-              puts "word: #{word}"
+              puts "Processing word: #{word}"
               # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT,
               # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
               puts " #{e.message}."
-              puts "Please DO NOT abort the program but wait for all threads to terminate."
+              puts "Please DO NOT abort, but wait for either the program to continue or all threads"
+              puts "to terminate (in which case the data will be saved to disk for fast retrieval on the next run.)"
               puts "Number of running threads: #{Thread.list.size - 1}."
-              puts "On termination of all threads, the data will be saved to disk for fast retrieval on the next run of the program."
               raise
 
             ensure
               from_queue << word  if $!
-              puts "Wrote '#{word}' to 'from_queue'"  if $!
+              puts "Wrote '#{word}' back to queue"  if $!
             end
 
             to_queue << local_result  unless local_result.nil?
@@ -227,14 +237,15 @@ module Chinese
     #  so far is automatically copied to a file after several retries. This data is read and
     #  processed on the next run to reduce the time spend with downloading the sentences
     #  (which is by far the most time-consuming part).
+    # @note Despite the download source chosen (by using the default or setting the `:source` options), if a word was not found on the first site, the second site is used as an alternative.
     # @overload min_sentences(options)
     #  @param [Hash] options The options to customize the following features.
     #  @option options [Symbol] :source The online dictionary to download the sentences from,
     #    either [:nciku](http://www.nciku.com) or [:jukuu](http://www.jukuu.com).
-    #    Defaults to *:nciku*.
+    #    Defaults to `:nciku`.
     #  @option options [Symbol] :size The size of the sentence to return from a possible set of
-    #    several sentences. Supports the values *:short*, *:average*, and *:long*.
-    #    Defaults to *:short*.
+    #    several sentences. Supports the values `:short`, `:average`, and `:long`.
+    #    Defaults to `:short`.
     #  @option options [Boolean] :with_pinyin Whether or not to return the pinyin representation
     #    of a sentence.
     #    Defaults to `true`.
@@ -257,7 +268,6 @@ module Chinese
       thread_count = validate { :thread_count }
       sentences    = sentences(options)
 
-      puts "Calculating the minimum necessary sentences..."
       minimum_sentences = select_minimum_necessary_sentences(sentences)
       # :uwc = 'unique words count'
       with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
@@ -345,7 +355,6 @@ module Chinese
 
     # Remove all non-word characters
     def edit_vocab(word_array)
-      puts "Editing vocabulary..."
 
       word_array.map {|word|
         edited = remove_parens(word)
@@ -450,13 +459,11 @@ module Chinese
 
 
     def add_target_words(hash_array)
-      puts "Internal: Adding target words..."
       from_queue  = Queue.new
       to_queue    = Queue.new
       # semaphore = Mutex.new
       result      = []
       words       = @words
-      puts "add_target_words, words.size = #{words.size}"
       hash_array.each {|hash| from_queue << hash}
 
       10.times.map {
@@ -565,18 +572,7 @@ module Chinese
         acc
       end
 
-      if matched_words.size == @words.size
-        true
-      else
-        puts "-----------------------------"
-        puts "#contains_all_target_words?"
-        puts "Words not found:"
-        p @words - matched_words
-        puts "-----------------------------"
-        false
-      end
-
-      #matched_words.size == @words.size
+      matched_words.size == @words.size
     end
 
 
