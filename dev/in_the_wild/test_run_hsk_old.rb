@@ -1,6 +1,6 @@
 # encoding: utf-8
 
-require 'chinese'
+require 'chinese_vocab'
 
 words = Chinese::Vocab.parse_words('../../hsk_data/word_lists/old_hsk_level_8828_chars_1_word_edited.csv', 4)
 p words.take(6)
