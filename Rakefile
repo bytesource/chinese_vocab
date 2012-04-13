@@ -11,7 +11,7 @@ task :default => [ :spec, :gem ]
 
 RSpec::Core::RakeTask.new {:spec}
 
-gem_spec = eval(File.read('chinese.gemspec'))
+gem_spec = eval(File.read('chinese_vocab.gemspec'))
 
 Gem::PackageTask.new( gem_spec ) do |t|
   t.need_zip = true
