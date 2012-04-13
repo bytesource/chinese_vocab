@@ -3,9 +3,9 @@ require 'cgi'
 require 'open-uri'
 require 'nokogiri'
 require 'timeout'
-require 'chinese/core_ext/array'
+require 'chinese_vocab/core_ext/array'
 require 'with_validations'
-require 'chinese/modules/helper_methods'
+require 'chinese_vocab/modules/helper_methods'
 
 module Chinese
   class Scraper

@@ -6,10 +6,10 @@ require 'cgi'
 require 'csv'
 require 'with_validations'
 require 'string_to_pinyin'
-require 'chinese/scraper'
-require 'chinese/modules/helper_methods'
-require 'chinese/core_ext/hash'
-require 'chinese/core_ext/queue'
+require 'chinese_vocab/scraper'
+require 'chinese_vocab/modules/helper_methods'
+require 'chinese_vocab/core_ext/hash'
+require 'chinese_vocab/core_ext/queue'
 
 module Chinese
   class Vocab

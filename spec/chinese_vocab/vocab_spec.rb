@@ -23,7 +23,7 @@ describe Chinese::Vocab do
 
     context :words do
 
-      specify {vocab.parse_words('spec/chinese/data/old_hsk_short.csv', 4).should == ["座右铭", "座右铭"] }
+      specify {vocab.parse_words('spec/chinese_vocab/data/old_hsk_short.csv', 4).should == ["座右铭", "座右铭"] }
     end
 
     context :within_range? do
