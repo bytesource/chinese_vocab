@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Stefan Rohlfing"]
   s.date        = Time.now.strftime('%Y-%m-%d')
   s.description = <<-DESCRIPTION
-=== Chinese::Vocab
+===
 This gem is meant to make live easier for any Chinese language student who:
 * Prefers to learn vocabulary from Chinese sentences.
 * Needs to memorize a lot of words on a _tight_ _time_ _schedule_.

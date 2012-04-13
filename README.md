@@ -8,20 +8,20 @@
 
 `Chinese::Vocab` addresses all of the above requirements by downloading sentences for each word and selecting the __minimum required number of Chinese sentences__ (and English translations) to __represent all words__.
 
-You can then export the sentences as well as additional tags provided by `Chinese::Vocab` to Anki.
+You can then export the sentences as well as additional tags provided by `Chinese::Vocab` to [Anki](http://ankisrs.net/).
 
 ## Features
 
 * Downloads sentences for each word in a Chinese vocabulary list and selects the __minimum required number of sentences__ to represent all words.
 * With the option key `:compact` set to `true` on initialization, all single character words that also appear in at least one multi character word are removed. The reason behind this option is to __remove redundancy in meaning__ and focus on learning distinct words. Example: (["看", "看书"] => [看书])
-* Adds additional __tags__ to every sentence that can be used in *Anki*:
+* Adds additional __tags__ to every sentence that can be used in [Anki](http://ankisrs.net/):
  * __Pinyin__: By default the pinyin representation is added to each sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le 。"
  * __Number of target words__: The number of words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "3_words"
  * __List of target words__: A list of the words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "[我, 他, 除了 以外]"
-* Export data to csv for easy import from *Anki*.
+* Export data to csv for easy import from [Anki](http://ankisrs.net/).
 
 
-## Real World Example (using the Traditional HSK word list)
+## Real World Example (Using the Traditional HSK Word List)
 
 ```` ruby
 # Import words from source.
@@ -29,9 +29,8 @@ You can then export the sentences as well as additional tags provided by `Chines
 # Second argument: column number of word column (counting starts at 1)
 words = Chinese::Vocab.parse_words('../old_hsk_level_8828_chars_1_word_edited.csv', 4)
 # Sample output:
-words.take(6)
+p words.take(6)
 # => ["啊", "啊", "矮", "爱", "爱人", "安静"]
-
 
 # Initialize an object.
 # First argument:  word list as an array of strings.
@@ -39,17 +38,43 @@ words.take(6)
 # :compact (defaults to false)
 anki = Chinese::Vocab.new(words, :compact => true)
 
-# List all words
-p anki.words.take(6)
-# => ["啊", "啊", "矮", "爱", "爱人", "安静"]
-p anki.words.size
-# => 7251
-
 # Options:
 # :source (defaults to :nciku)
 # :size   (defaults to :short)
 # :with_pinyin (defaults to true)
 anki.min_sentences(:thread_count => 10)
+# Sample output:
+# [{:word=>"吧", :chinese=>"放心吧，他做事向来把牢。",
+#   :pinyin=>"fàng xīn ba ，tā zuò shì xiàng lái bă láo 。",
+#   :english=>"Take it easy. You can always count on him."},
+#  {:word=>"喝", :chinese=>"喝酒挂红的人一般都很能喝。",
+#   :pinyin=>"hē jiŭ guà hóng de rén yī bān dōu hĕn néng hē 。",
+#   :english=>"Those whose face turn red after drinking are normally heavy drinkers."}]
+
+# Save data to csv.
+# First parameter: path to file
+# Options:
+# Any supported option of Ruby's CSV libary
+anki.to_csv('in_the_wild_test.csv')
+# Sample output (2 sentences/lines out of 4511):
+
+# 只要我们有信心，就会战胜困难。,zhī yào wŏ men yŏu xìn xīn ，jiù huì zhàn shèng kùn nán 。,
+# "As long as we have confidence, we can overcome difficulties.",
+# 5_words,"[信心, 只要, 困难, 我们, 战胜]"
+# 至于他什么时候回来，我不知道。,zhì yú tā shén mo shí hòu huí lái ，wŏ bù zhī dào 。,
+# "As to what time he's due back, I'm just not sure.",
+# 5_words,"[什么, 回来, 时候, 知道, 至于]"
+````
+
+#### Additional methods
+
+```` ruby
+# List all words
+p anki.words.take(6)
+# => ["啊", "啊", "矮", "爱", "爱人", "安静"]
+
+p anki.words.size
+# => 7251
 
 p anki.stored_sentences.take(2)
 # [{:word=>"吧", :chinese=>"放心吧，他做事向来把牢。",
@@ -66,21 +91,6 @@ p anki.not_found
 # Number of unique characters in the selected sentences
 p anki.sentences_unique_chars.size
 # => 3290
-
-# Save data to csv.
-# First parameter: path to file
-# Options:
-# Any supported option of Ruby's CSV libary
-anki.to_csv('in_the_wild_test.csv')
-# Sample output (2 sentences/lines out of 4511):
-
-# 舞台上正在上演的是吕剧。,wŭ tái shàng zhèng zài shàng yăn de shì lǚ jù 。,
-# What is being performed on the stage is Lv opera (a local opera of Shandong Province).
-# ,2_words,"[正在, 舞台]"
-# 古代官员上朝都要穿朝靴。,gŭ dài guān yuán shàng cháo dōu yào chuān cháo xuē 。,
-# "In ancient times, all courtiers had to wear special boots to enter the court.",
-# 2_words,"[古代, 官员]"
-
 ````
 
 ## Documentation
