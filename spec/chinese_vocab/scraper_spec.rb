@@ -41,7 +41,7 @@ describe Chinese::Scraper do
         specify { scraper.sentences(word, :source => :jukuu).size.should == 10 }
         specify { scraper.sentences(word, :source => :jukuu)[0].should ==
                   ["他们能找到牛奶、鸡蛋、面包、甜点、巧克力、浓缩汤、蔬菜，甚至冰冻比萨和豆浆。",
-                    "They find milk, eggs, bread and cookies, chocolate, soup, vegetables, even frozen pizzas and soymilk."] }
+                   "They find milk, eggs, bread and cookies, chocolate, soup, vegetables, even frozen pizzas and soymilk."] }
         specify { scraper.sentences(word, :source => :jukuu).size.should == 10 }
       end
     end
@@ -74,26 +74,41 @@ describe Chinese::Scraper do
 
     end
 
-    context :pair_with_empty_string?
+    context :pair_with_empty_string? do
 
-    specify { scraper.pair_with_empty_string?(["hello", "world"]).should be_false }
-    specify { scraper.pair_with_empty_string?(["", "world"]).should be_true }
-    specify { scraper.pair_with_empty_string?(["", ""]).should be_true }
-  end
+      specify { scraper.pair_with_empty_string?(["hello", "world"]).should be_false }
+      specify { scraper.pair_with_empty_string?(["", "world"]).should be_true }
+      specify { scraper.pair_with_empty_string?(["", ""]).should be_true }
+    end
+
+    context :sentence_times_longer_than_word? do
+
+      word = "除了 以外"
+      sentence1 = "除了以外"
+      sentence2 = "除了，，（ 以为）。"
+      sentence3 = "除了唱歌以外，他什么都不喜欢"
+
+      specify { scraper.sentence_times_longer_than_word?(sentence1, word, 2).should be_false }
+      specify { scraper.sentence_times_longer_than_word?(sentence2, word, 2).should be_false }
+      specify { scraper.sentence_times_longer_than_word?(sentence3, word, 2).should be_true }
+      specify { scraper.sentence_times_longer_than_word?(sentence3, word, 3).should be_true }
+      specify { scraper.sentence_times_longer_than_word?(sentence3, word, 3.5).should be_false }
+
+    end
 
 
-  context "On failure" do
+    context "On failure" do
 
-    # context :initialize do
+      # context :initialize do
 
-    #   it "should raise an expection" do
+      #   it "should raise an expection" do
 
-    #     lambda do
-    #       described_class.new("豆浆", :source => :not_supported)
-    #     end.should raise_exception(ArgumentError, /'not_supported' is not a valid value for option :source/)
+      #     lambda do
+      #       described_class.new("豆浆", :source => :not_supported)
+      #     end.should raise_exception(ArgumentError, /'not_supported' is not a valid value for option :source/)
 
-    #   end
-    # end
+      #   end
+    end
 
 
     context "When word is not found" do
