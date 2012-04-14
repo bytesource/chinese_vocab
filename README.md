@@ -84,7 +84,7 @@ p anki.stored_sentences.take(2)
 #   :pinyin=>"hē jiŭ guà hóng de rén yī bān dōu hĕn néng hē 。",
 #   :english=>"Those whose face turn red after drinking are normally heavy drinkers."}]
 
-# words not found
+# Words not found on neither online dictionary.
 p anki.not_found
 # ["来回来去", "来看来讲", "深美"]
 

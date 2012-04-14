@@ -20,7 +20,7 @@ module Chinese
     #
     #  * Removing parentheses (with the content inside each parenthesis).
     #  * Removing any slash (/) and only keeping the longest part.
-    #  * Removing '儿' for any word longer than two characters.
+    #  * Removing trailing '儿' from any word longer than two characters.
     #  * Removing non-word characters such as points and commas.
     #  * Removing and duplicate words.
     #@return [Array<String>]
@@ -263,6 +263,8 @@ module Chinese
     #   The return value is also stored in {#stored_sentences}.
     # @example (see #sentences_unique_chars)
     def min_sentences(options = {})
+      puts "Selecting the minimum required sentences..."
+      puts "(This might take some time depending on the size of the vocabulary list.)"
       @with_pinyin = validate { :with_pinyin }
       # Always run this method.
       thread_count = validate { :thread_count }
