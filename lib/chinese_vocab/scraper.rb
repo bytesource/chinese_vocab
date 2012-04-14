@@ -91,6 +91,11 @@ module Chinese
       # 北边 => 树林边的河流向北方
       sentence_pairs = sentence_pairs.select { |cn, _| include_every_char?(word, cn) }
 
+      # Only select Chinese sentences that are at least x times longer than the word (counting character length),
+      # as sometimes only the word itself is listed as a sentence (or a short expression that does not really
+      # count as a sentence).
+      sentence_pairs = sentence_pairs.select { |cn, _| sentence_times_longer_than_word?(cn, word, 2.2) }
+
       sentence_pairs
     end
 
@@ -119,11 +124,15 @@ module Chinese
       pair[0].empty? || pair[1].empty?
     end
 
-    # Despite its name returns the SECOND shortest sentence,
-    # as the shortest result often is not a real sentence,
-    # but a definition.
+
+    def self.sentence_times_longer_than_word?(sentence, word, factor)
+      sentence_chars = sentence.scan(/\p{Word}/)
+      word_chars     = word.scan(/\p{Word}/)
+      sentence_chars.size >= (factor * word_chars.size)
+    end
+
     def self.shortest_size(sentence_pairs)
-      sentence_pairs.sort_by {|(cn,_)| cn.length }.take(2).last
+      sentence_pairs.sort_by {|(cn,_)| cn.length }.first
     end
 
     def self.longest_size(sentence_pairs)
