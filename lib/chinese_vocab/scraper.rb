@@ -94,9 +94,15 @@ module Chinese
       # Only select Chinese sentences that are at least x times longer than the word (counting character length),
       # as sometimes only the word itself is listed as a sentence (or a short expression that does not really
       # count as a sentence).
-      sentence_pairs = sentence_pairs.select { |cn, _| sentence_times_longer_than_word?(cn, word, 2.2) }
+      # Exception: If the result is an empty array (= none of the sentences fulfill the length constrain)
+      # then just return the sentences selected so far.
+      sentence_pairs_selected_by_length_factor = sentence_pairs.select { |cn, _| sentence_times_longer_than_word?(cn, word, 2.2) }
 
-      sentence_pairs
+      unless sentence_pairs_selected_by_length_factor.empty?
+        sentence_pairs_selected_by_length_factor
+      else
+        sentence_pairs
+      end
     end
 
     def self.sentence(word, options={})

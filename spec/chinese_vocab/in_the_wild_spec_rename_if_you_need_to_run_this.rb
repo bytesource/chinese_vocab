@@ -19,6 +19,7 @@ describe Chinese::Vocab do
     puts "Saved edited words to file."
 
     sentences = anki.min_sentences(:size => :short, :source => :nciku, :with_pinyin => true, :thread_count => 8)
+    p sentences.take(2)
     anki.to_csv('in_the_wild_test.csv')
     puts "Contains all words?: #{anki.contains_all_target_words?(sentences, :chinese)}."
     puts "Missing words (@not_found): #{anki.not_found}"

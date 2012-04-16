@@ -103,7 +103,7 @@ describe Chinese::Vocab do
         vocab.not_found.include?("罗飞科").should be_true
       end
       specify do
-        vocab.select_sentence("浮鞋", {}).should == {:word=>"浮鞋", :chinese=>"套管浮鞋", :english=>"casing float shoe"}
+        vocab.select_sentence("浮鞋", {}).should == {:word=>"浮鞋", :chinese=>"注水泥浮鞋", :english=>"cementing float shoe"}
         vocab.not_found.include?("浮鞋").should be_false
         # vocab.with_pinyin  # is always nil because @with_pinyin gets set in #senteces,
         # but here #select sentence is called in isolation.
@@ -122,7 +122,7 @@ describe Chinese::Vocab do
         # but returns a result on the second one (:jukuu).
         # Therefore the following must not return an empty array:
         new_vocab.sentences.should ==
-          [{:word=>"浮鞋", :chinese=>"套管浮鞋", :pinyin=>"tào guăn fú xié", :english=>"casing float shoe"}]
+          [{:word=>"浮鞋", :chinese=>"注水泥浮鞋", :pinyin=>"zhù shuĭ ní fú xié", :english=>"cementing float shoe"}]
         # [["除了 以外", "除了这张大钞以外，我没有其他零票了。",
         #   "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le
         #   "I have no change except for this high denomination banknote."]]
@@ -178,6 +178,25 @@ describe Chinese::Vocab do
 
     end
 
+    context :word_frequency do
+
+      specify do
+        sentences = [{chinese: "我们跟他们是好朋友。"}, {chinese: "你你你你你你"}, {chinese: "我我我"}]
+        vocab.word_frequency(sentences).should ==
+          {"我"=>2, "打"=>0, "他"=>1, "他们"=>1, "谁"=>0, "越 来越"=>0, "除了 以外"=>0, "浮鞋"=>0}
+      end
+
+    end
+
+    context :occurrence_count do
+
+      frequency = {"越 来越"=>3, "除了 以外"=>5, "他"=>1}
+      word_array = ["越 来越",  "除了 以外",  "他"]
+
+      specify { vocab.occurrence_count(word_array, frequency).should == 9 }
+
+    end
+
 
     context :target_words_per_sentence do
       sentence     = '除了饺子以外，我也很喜欢吃馒头'
@@ -214,6 +233,20 @@ describe Chinese::Vocab do
                  {word: "_", chinese: '1234', pinyin: '_', english: '_', target_words: [1,2]}] }
 
     end
+
+    # context :sort_by_word_occurrence_quotient do
+    #  sentences =
+    #    [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :target_words=>["谁", "他们"]},
+    #    {:word=>"打", :chinese=>"我跟他是八竿子打不着的亲戚。", :pinyin=>"", :english=>"", :target_words=>["我", "打"]},
+    #    {:word=>"除了 以外", :chinese=>"除了这张大钞以外，我没有其他零票了。", :pinyin=>"", :english=>"", :target_words=>["我", "除了 以外"]},
+    #    {:word=>"浮鞋", :chinese=>"舌型浮鞋", :pinyin=>"", :english=>"", :target_words=>["浮鞋"]},
+    #    {:word=>"他们", :chinese=>"他们正忙着装修爱巢呢！", :pinyin=>"", :english=>"", :target_words=>["他们"]},
+    #    {:word=>"越 来越", :chinese=>"出口秀节目越来越受欢迎。", :pinyin=>"", :english=>"", :target_words=>["越 来越"]},
+    #    {:word=>"我", :chinese=>"我们两家是世交，他比我大，是我的世兄。", :pinyin=>"", :english=>"", :target_words=>["我"]}]
+
+    #  specify { vocab.sort_by_word_occurrence_quotient(sentences).should == "a" }
+
+    # end
 
     context :contains_all_target_words? do
 

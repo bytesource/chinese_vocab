@@ -163,9 +163,10 @@ module Chinese
         @not_found = convert(not_found)
         size_a = words.size
         size_b = to_queue.size
-        # puts "Size(words)       = #{size_a}"
-        # puts "Size(to_queue)    = #{size_b}"
-        # puts "Size(words+queue) = #{size_a+size_b}"
+        puts "Size(@not_found)  = #{@not_found.size}"
+        puts "Size(words)       = #{size_a}"
+        puts "Size(to_queue)    = #{size_b}"
+        puts "Size(words+queue) = #{size_a+size_b}"
 
         # Remove file
         File.unlink(file_name)
@@ -263,8 +264,6 @@ module Chinese
     #   The return value is also stored in {#stored_sentences}.
     # @example (see #sentences_unique_chars)
     def min_sentences(options = {})
-      puts "Selecting the minimum required sentences..."
-      puts "(This might take some time depending on the size of the vocabulary list.)"
       @with_pinyin = validate { :with_pinyin }
       # Always run this method.
       thread_count = validate { :thread_count }
@@ -504,6 +503,30 @@ module Chinese
         #     first.nonzero? || (a[:chinese].size <=> b[:chinese].size) }
     end
 
+    def word_frequency(sentences)
+
+      words.reduce({}) do |acc, word|
+        acc[word] = 0 # Set key with a default value of zero.
+
+        sentences.each do |row|
+          sentence = row[:chinese]
+          acc[word] += 1 if include_every_char?(word, sentence)
+        end
+        acc
+      end
+    end
+
+    def sort_by_word_occurrence_quotient(with_target_words)
+      with_target_words.sort_by do |row|
+        frequency = word_frequency(sentences)
+        target_words = row[:target_words]
+        occurrence = occurrence_count(target_words, frequency)
+        quotient = Float(occurrence / target_words.size)
+
+        [quotient, row[:chinese].size]
+      end
+    end
+
 
     def select_minimum_necessary_sentences(sentences)
       with_target_words = add_target_words(sentences)
@@ -528,6 +551,13 @@ module Chinese
         end
       end
       selected_rows
+    end
+
+
+    def occurrence_count(word_array, frequency)
+      word_array.reduce(0) do |acc, word|
+        acc + frequency[word]
+      end
     end
 
 
@@ -574,7 +604,15 @@ module Chinese
         acc
       end
 
-      matched_words.size == @words.size
+      # matched_words.size == @words.size
+
+      if matched_words.size == @words.size
+        true
+      else
+        puts "Words not found in sentences:"
+        p @words.size - matched_words.size
+        false
+      end
     end
 
 

@@ -54,10 +54,9 @@ describe Chinese::Scraper do
                   ["一二三四","one-four"],["一二三四五","one-five"],["一二三四五六","one-six"]]
 
 
-        # Actually the second smallest value is returned.
         specify do
           scraper.stub(:sentences) { result }
-          scraper.sentence(word, :source => :nciku, :size => :short).should  == ["一二","one-two"]
+          scraper.sentence(word, :source => :nciku, :size => :short).should  == ["一","one"]
         end
         specify do
           scraper.stub(:sentences) { result }
