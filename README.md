@@ -10,6 +10,7 @@
 
 You can then export the sentences as well as additional tags provided by `Chinese::Vocab` to [Anki](http://ankisrs.net/).
 
+
 ## Features
 
 * Downloads sentences for each word in a Chinese vocabulary list and selects the __minimum required number of sentences__ to represent all words.
@@ -19,6 +20,7 @@ You can then export the sentences as well as additional tags provided by `Chines
  * __Number of target words__: The number of words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "3_words"
  * __List of target words__: A list of the words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "[我, 他, 除了 以外]"
 * Export data to csv for easy import from [Anki](http://ankisrs.net/).
+
 
 ## Installation
 
@@ -34,7 +36,7 @@ $ gem install chinese_vocab
 
 I *highly recommend* both sites for daily use, and suggest you bookmark them right away.
 
-###__Important note of caution__
+###__Important Note of Caution__
 In order to save precious bandwidth for these great sites,  please do __only use this gem when you really need the Chinese sentences for your study__!
 
 
@@ -109,6 +111,7 @@ p anki.not_found
 p anki.sentences_unique_chars.size
 # => 3290
 ````
+
 
 ## Documentation
 * [parse_words](http://rubydoc.info/github/bytesource/chinese_vocab/master/Chinese/Vocab.parse_words) - How to read in the Chinese words and correctly set the column number, Options:
