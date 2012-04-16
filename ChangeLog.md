@@ -1,3 +1,12 @@
+#### Others
+* `Vocab`:
+ * Added #word_frequency
+ * Added #sort_by_word_occurrence_quotient
+
+### Bug Fixes
+* `Scraper`: Don't impose a minimum sentence length if this constraint would exclude all sentences.
+
+
 ## Version 0.8.6 (April 13, 2012)
 
 ### Other
