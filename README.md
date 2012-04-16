@@ -20,6 +20,23 @@ You can then export the sentences as well as additional tags provided by `Chines
  * __List of target words__: A list of the words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "[我, 他, 除了 以外]"
 * Export data to csv for easy import from [Anki](http://ankisrs.net/).
 
+## Installation
+
+```` bash
+$ gem install chinese_vocab
+````
+
+## The Dictionaries
+`Chinese::Vocab` uses the following online dictionaries to download the Chinese sentences:
+
+* [Nciku](http://www.nciku.com/): This is a fantastic English-Chinese Dictionary with tons of useful features and a great community.
+* [Jukuu](http://jukuu.com/): This one is special. It searches the Internet for example sentences and thus is able to return results even for more esoteric technical terms. Search results are returned extremely quickly.
+
+I *highly recommend* both sites for daily use, and suggest you bookmark them right away.
+
+###__Important note of caution__
+In order to save precious bandwidth for these great sites,  please do __only use this gem when you really need the Chinese sentences for your study__!
+
 
 ## Real World Example (Using the Traditional HSK Word List)
 
