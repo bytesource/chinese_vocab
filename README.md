@@ -14,11 +14,15 @@ You can then export the sentences as well as additional tags provided by `Chines
 ## Features
 
 * Downloads sentences for each word in a Chinese vocabulary list and selects the __minimum required number of sentences__ to represent all words.
-* With the option key `:compact` set to `true` on initialization, all single character words that also appear in at least one multi character word are removed. The reason behind this option is to __remove redundancy in meaning__ and focus on learning distinct words. Example: (["看", "看书"] => [看书])
+* With the option key `:compact` set to `true` on initialization, all single character words that also appear in at least one multi character word are removed. The reason behind this option is to __remove redundancy in meaning__ and focus on learning distinct words.
+   Example: (["看", "看书"] => [看书])
 * Adds additional __tags__ to every sentence that can be used in [Anki](http://ankisrs.net/):
- * __Pinyin__: By default the pinyin representation is added to each sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le 。"
- * __Number of target words__: The number of words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "3_words"
- * __List of target words__: A list of the words from the vocabulary that are covered by a sentence. Example: "除了这张大钞以外，我没有其他零票了。" => "[我, 他, 除了 以外]"
+ * __Pinyin__: By default the pinyin representation is added to each sentence.
+   Example: "除了这张大钞以外，我没有其他零票了。" => "chú le zhè zhāng dà chāo yĭ wài ，wŏ méi yŏu qí tā líng piào le 。"
+ * __Number of target words__: The number of words from the vocabulary that are covered by a sentence.
+   Example: "除了这张大钞以外，我没有其他零票了。" => "3_words"
+ * __List of target words__: A list of the words from the vocabulary that are covered by a sentence.
+   Example: "除了这张大钞以外，我没有其他零票了。" => "[我, 他, 除了 以外]"
 * Export data to csv for easy import from [Anki](http://ankisrs.net/).
 
 
