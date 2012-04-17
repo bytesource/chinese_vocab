@@ -184,7 +184,7 @@ module Chinese
 
             begin
               local_result = select_sentence(word, options)
-              puts "Processing word: #{word}"
+              puts "Processing word: #{word} (#{from_queue.size} words left)"
               # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT,
               # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
@@ -269,7 +269,31 @@ module Chinese
       thread_count = validate { :thread_count }
       sentences    = sentences(options)
 
-      minimum_sentences = select_minimum_necessary_sentences(sentences)
+      # Remove those words that don't have a sentence
+      words             = @words - @not_found
+      minimum_sentences = []
+
+      # On every round:
+      # -- Find the target words in every sentence.
+      # -- Select the sentence with the most target words.
+      # -- Remove those target words from the words array.
+      while(!words.empty?) do
+        puts "No. of words left: #{words.size}"
+        puts "Take five: #{words.take(5)}"
+
+        sentences = add_target_words(sentences, words)
+        sentences = sort_by_target_word_count(sentences)
+
+
+        best_sentence = sentences.first
+        minimum_sentences << best_sentence
+
+        # Remove all target words that occur in our best
+        # sentence from the words as we don't want to look
+        # for these again.
+        words = words - best_sentence[:target_words]
+      end
+
       # :uwc = 'unique words count'
       with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
       # :uws = 'unique words string'
@@ -459,12 +483,12 @@ module Chinese
     end
 
 
-    def add_target_words(hash_array)
+    def add_target_words(hash_array, words)
       from_queue  = Queue.new
       to_queue    = Queue.new
       # semaphore = Mutex.new
       result      = []
-      words       = @words
+      # words       = @words
       hash_array.each {|hash| from_queue << hash}
 
       10.times.map {
