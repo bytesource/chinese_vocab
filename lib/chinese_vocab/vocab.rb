@@ -167,6 +167,7 @@ module Chinese
         puts "Size(words)       = #{size_a}"
         puts "Size(to_queue)    = #{size_b}"
         puts "Size(words+queue) = #{size_a+size_b}"
+        puts "Size(sentences)   = #{to_queue.size}"
 
         # Remove file
         File.unlink(file_name)
@@ -184,7 +185,7 @@ module Chinese
 
             begin
               local_result = select_sentence(word, options)
-              puts "Processing word: #{word}"
+              puts "Processing word: #{word} (#{from_queue.size} words left)"
               # rescue SocketError, Timeout::Error, Errno::ETIMEDOUT,
               # Errno::ECONNREFUSED, Errno::ECONNRESET, EOFError => e
             rescue Exception => e
@@ -269,18 +270,67 @@ module Chinese
       thread_count = validate { :thread_count }
       sentences    = sentences(options)
 
-      minimum_sentences = select_minimum_necessary_sentences(sentences)
+      # Remove those words that don't have a sentence
+      words             = @words - @not_found
+      puts "Determining the target words for every sentence..."
+      sentences         = add_target_words(sentences, words)
+
+      minimum_sentences = find_sentences(sentences, words)
+
       # :uwc = 'unique words count'
-      with_uwc_tag      = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
+      with_uwc_tag = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
       # :uws = 'unique words string'
       with_uwc_uws_tags = add_key(with_uwc_tag, :uws) do |row|
         words = row[:target_words].sort.join(', ')
         "[" + words + "]"
       end
       # Remove those keys we don't need anymore
-      result            = remove_keys(with_uwc_uws_tags, :target_words, :word)
+      result = remove_keys(with_uwc_uws_tags, :target_words, :word)
       @stored_sentences = result
       @stored_sentences
+    end
+
+
+    require 'set'
+    def find_sentences(sentences, words)
+      min_sentences   = []
+      # At the start the variable 'remaining words' contains all
+      # target words - minus those with no sentence found.
+      remaining_words = Set.new(words.dup)
+
+
+      # On every round:
+      # Finds the sentence with the most target words ('best sentence').
+      # Adds that sentence to the result array.
+      # Deletes all target words from the remaining words that are part of
+      # the best sentence.
+      while(!remaining_words.empty?) do
+        puts "Number of remaining_words: #{remaining_words.size}"
+        # puts "Take five: #{remaining_words.take(5)}"
+
+        # Return the sentence with the largest number of target words.
+        sentences = sentences.sort_by do |row|
+          # Returns a new array containing elements common to
+          # the two arrays, with no duplicates.
+          words_left = remaining_words.intersection(row[:target_words])
+
+          # Sort by size of words left first (in descsending order),
+          # if equal, sort by length of the Chinese sentence (in ascending order).
+          [-words_left.size, row[:chinese].size]
+        end
+
+        best_sentence = sentences.first
+
+        # Add the sentence with the largest number of
+        # target words to the result array.
+        min_sentences << best_sentence
+        # Remove the target words that are part of the
+        # best sentence from the remaining words.
+        remaining_words = remaining_words - best_sentence[:target_words]
+      end
+
+      # puts "Number of minimum sentences: #{min_sentences.size}"
+      min_sentences
     end
 
 
@@ -459,18 +509,19 @@ module Chinese
     end
 
 
-    def add_target_words(hash_array)
+    def add_target_words(hash_array, words)
       from_queue  = Queue.new
       to_queue    = Queue.new
       # semaphore = Mutex.new
       result      = []
-      words       = @words
+      # words       = @words
       hash_array.each {|hash| from_queue << hash}
 
       10.times.map {
         Thread.new(words) do
 
           while(row = from_queue.pop!)
+            puts "Queue size: #{from_queue.size}"
             sentence     = row[:chinese]
             target_words = target_words_per_sentence(sentence, words)
 
@@ -610,7 +661,7 @@ module Chinese
         true
       else
         puts "Words not found in sentences:"
-        p @words.size - matched_words.size
+        p @words - matched_words
         false
       end
     end
