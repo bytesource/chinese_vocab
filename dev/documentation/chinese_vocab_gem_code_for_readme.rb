@@ -20,25 +20,34 @@ anki = Chinese::Vocab.new(words, :compact => true)
 # :with_pinyin (defaults to true)
 anki.min_sentences(:thread_count => 10)
 # Sample output:
-# [{:word=>"吧", :chinese=>"放心吧，他做事向来把牢。",
-#   :pinyin=>"fàng xīn ba ，tā zuò shì xiàng lái bă láo 。",
-#   :english=>"Take it easy. You can always count on him."},
-#  {:word=>"喝", :chinese=>"喝酒挂红的人一般都很能喝。",
-#   :pinyin=>"hē jiŭ guà hóng de rén yī bān dōu hĕn néng hē 。",
-#   :english=>"Those whose face turn red after drinking are normally heavy drinkers."}]
+# [{:chinese=>"小红经常向别人夸示自己有多贤惠。",
+#   :pinyin=>"xiăo hóng jīng cháng xiàng bié rén kuā shì zì jĭ yŏu duō xián huì 。",
+#   :english=>"Xiaohong always boasts that she is genial and prudent.",
+#   :target_words=>["别人", "经常", "自己", "贤惠"]},
+#  {:chinese=>"一年一度的圣诞节购买礼物的热潮.",
+#   :pinyin=>"yī nián yī dù de shèng dàn jié gòu măi lĭ wù de rè cháo yī",
+#   :english=>"the annual Christmas gift-buying jag",
+#   :target_words=>["礼物", "购买", "圣诞节", "热潮", "一度"]}]
 
 # Save data to csv.
 # First parameter: path to file
 # Options:
 # Any supported option of Ruby's CSV libary
 anki.to_csv('in_the_wild_test.csv')
-# Sample output (2 sentences/lines out of 4511):
-# 只要我们有信心，就会战胜困难。,zhī yào wŏ men yŏu xìn xīn ，jiù huì zhàn shèng kùn nán 。,
-# "As long as we have confidence, we can overcome difficulties.",
-# 5_words,"[信心, 只要, 困难, 我们, 战胜]"
-# 至于他什么时候回来，我不知道。,zhì yú tā shén mo shí hòu huí lái ，wŏ bù zhī dào 。,
-# "As to what time he's due back, I'm just not sure.",
-# 5_words,"[什么, 回来, 时候, 知道, 至于]"
+# Sample output: 2 sentences (csv rows) of 4431 sentences total
+# (Note that we started out with 7248 sentences):
+
+# 小红经常向别人夸示自己有多贤惠。,
+# xiăo hóng jīng cháng xiàng bié rén kuā shì zì jĭ yŏu duō xián huì 。,
+# Xiaohong always boasts that she is genial and prudent.,
+# 4_words,"[别人, 经常, 自己, 贤惠]"
+#
+# 一年一度的圣诞节购买礼物的热潮.,
+# yī nián yī dù de shèng dàn jié gòu măi lĭ wù de rè cháo yī,
+# the annual Christmas gift-buying jag,
+# 5_words,"[一度, 圣诞节, 热潮, 礼物, 购买]"
+
+
 
 
 #### Additional methods
@@ -51,12 +60,14 @@ p anki.words.size
 # => 7251
 
 p anki.stored_sentences.take(2)
-# [{:word=>"吧", :chinese=>"放心吧，他做事向来把牢。",
-#   :pinyin=>"fàng xīn ba ，tā zuò shì xiàng lái bă láo 。",
-#   :english=>"Take it easy. You can always count on him."},
-#  {:word=>"喝", :chinese=>"喝酒挂红的人一般都很能喝。",
-#   :pinyin=>"hē jiŭ guà hóng de rén yī bān dōu hĕn néng hē 。",
-#   :english=>"Those whose face turn red after drinking are normally heavy drinkers."}]
+# [{:chinese=>"小红经常向别人夸示自己有多贤惠。",
+#   :pinyin=>"xiăo hóng jīng cháng xiàng bié rén kuā shì zì jĭ yŏu duō xián huì 。",
+#   :english=>"Xiaohong always boasts that she is genial and prudent.",
+#   :target_words=>["别人", "经常", "自己", "贤惠"]},
+#  {:chinese=>"一年一度的圣诞节购买礼物的热潮.",
+#   :pinyin=>"yī nián yī dù de shèng dàn jié gòu măi lĭ wù de rè cháo yī",
+#   :english=>"the annual Christmas gift-buying jag",
+#   :target_words=>["礼物", "购买", "圣诞节", "热潮", "一度"]}]
 
 # Words not found on neither online dictionary.
 p anki.not_found
@@ -64,4 +75,4 @@ p anki.not_found
 
 # Number of unique characters in the selected sentences
 p anki.sentences_unique_chars.size
-# => 3290
+# => 3232

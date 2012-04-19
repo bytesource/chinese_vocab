@@ -54,7 +54,8 @@ module Chinese
       # http://stackoverflow.com/questions/377768/string-concatenation-and-ruby/378258#378258
       url       = source[:url] + CGI.escape(word)
       # http://ruby-doc.org/stdlib-1.9.2/libdoc/timeout/rdoc/Timeout.html#method-c-timeout
-      content   = Timeout.timeout(20) { open(url) }
+      content   = Timeout.timeout(30) { open(url) }
+      content   = open(url)
       main_node = Nokogiri::HTML(content).css(source[:parent_sel]) # Returns a single node.
       return []  if main_node.to_a.empty?
 

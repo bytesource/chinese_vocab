@@ -4,6 +4,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'cgi'
 require 'csv'
+require 'set'
 require 'with_validations'
 require 'string_to_pinyin'
 require 'chinese_vocab/scraper'
@@ -275,7 +276,7 @@ module Chinese
       puts "Determining the target words for every sentence..."
       sentences         = add_target_words(sentences, words)
 
-      minimum_sentences = find_sentences(sentences, words)
+      minimum_sentences = find_minimum_sentences(sentences, words)
 
       # :uwc = 'unique words count'
       with_uwc_tag = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
@@ -291,8 +292,7 @@ module Chinese
     end
 
 
-    require 'set'
-    def find_sentences(sentences, words)
+    def find_minimum_sentences(sentences, words)
       min_sentences   = []
       # At the start the variable 'remaining words' contains all
       # target words - minus those with no sentence found.
@@ -521,7 +521,6 @@ module Chinese
         Thread.new(words) do
 
           while(row = from_queue.pop!)
-            puts "Queue size: #{from_queue.size}"
             sentence     = row[:chinese]
             target_words = target_words_per_sentence(sentence, words)
 
@@ -579,8 +578,10 @@ module Chinese
     end
 
 
+    # @deprecated  This method has been replaced by {#find_minimum_sentences}.
     def select_minimum_necessary_sentences(sentences)
-      with_target_words = add_target_words(sentences)
+      words = @words - @not_found
+      with_target_words = add_target_words(sentences, words)
       rows              = sort_by_target_word_count(with_target_words)
 
       selected_rows   = []

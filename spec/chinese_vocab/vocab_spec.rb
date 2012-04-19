@@ -212,8 +212,12 @@ describe Chinese::Vocab do
       hash_array = [{word: "_", chinese: '除了饺子以外，我也很喜欢吃馒头', pinyin: '_', english: '_'},
                     {word: "_", chinese: '钻井需要用浮鞋', pinyin: '_', english: '_'}]
 
-      specify { target_words = vocab.add_target_words(hash_array).map {|hash| hash[:target_words] }.
-                array_of_arrays_equal?([["除了 以外", "我"],["浮鞋"]]) }
+      specify do
+        words = vocab.words
+        target_words = vocab.add_target_words(hash_array, words).map {|hash| hash[:target_words] }.
+          array_of_arrays_equal?([["除了 以外", "我"],["浮鞋"]])
+      end
+
     end
 
     context :sort_by_target_word_count do
@@ -264,7 +268,7 @@ describe Chinese::Vocab do
 
       obj = described_class.new(words, :compact => true)
       s = obj.sentences
-      with_target_words = obj.add_target_words(s)
+      with_target_words = obj.add_target_words(s, obj.words)
       sorted_by_target_word_count = obj.sort_by_target_word_count(with_target_words)
       # Replaced each English and pinyin sententence with an empty string to make the output more readable:
       # [{:word=>"谁", :chinese=>"后来他们谁也不理谁。", :pinyin=>"", :english=>"", :target_words=>["谁", "他们"]},
