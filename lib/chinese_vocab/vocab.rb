@@ -274,47 +274,8 @@ module Chinese
       words             = @words - @not_found
       puts "Determining the target words for every sentence..."
       sentences         = add_target_words(sentences, words)
-      minimum_sentences = []
 
-      # On every round:
-      # -- Find the target words in every sentence.
-      # -- Select the sentence with the most target words.
-      # -- Remove those target words from the words array.
-      # Note: If the number of the sentence with the most target words left equals 1,
-      #       then select all sentences with a target word count of 1, because these
-      #       sentences must each include a unique word that does not appear elsewhere.
-      while(!words.empty?) do
-        puts "No. of words left: #{words.size}"
-        puts "Take five: #{words.take(5)}"
-
-        sentences = sentences.sort_by do |sentence|
-          target_words = sentence[:target_words]
-          # Intersection:
-          # Returns a new array containing elements common to
-          # the two arrays, with no duplicates.
-          target_words_in_sentence = words & target_words
-
-          sentence[:current_target_word] = target_words_in_sentence
-
-          [-sentence[:current_target_word].size, sentence[:chinese].size]
-        end
-
-        sentence = sentences.first
-        if sentence[:current_target_word].size == 1
-          matching_sentences = sentences.select { |s| s[:current_target_word].size == 1 }
-          matching_words     = matching_sentences.map { |row| row[:current_target_word] }.flatten
-          min_sentences << matching_sentences
-          words = words - matching_words                  # 1)
-        else
-          minimum_sentences << sentence
-          words = words - sentence[:current_target_word]  # 1)
-        end
-
-        # 1)
-        # Remove all target words that occur in our best matching
-        # sentence from the words as we don't want to look
-        # for these again.
-      end
+      minimum_sentences = find_sentences(sentences, words)
 
       # :uwc = 'unique words count'
       with_uwc_tag = add_key(minimum_sentences, :uwc) {|row| uwc_tag(row[:target_words]) }
@@ -324,49 +285,53 @@ module Chinese
         "[" + words + "]"
       end
       # Remove those keys we don't need anymore
-      result = remove_keys(with_uwc_uws_tags,
-                           :target_words, :current_target_word, :word)
+      result = remove_keys(with_uwc_uws_tags, :target_words, :word)
       @stored_sentences = result
       @stored_sentences
     end
 
 
+    require 'set'
+    def find_sentences(sentences, words)
+      min_sentences   = []
+      # At the start the variable 'remaining words' contains all
+      # target words - minus those with no sentence found.
+      remaining_words = Set.new(words.dup)
 
-    def find_sentences(sentences)
-      min_sentences = []
 
-      # add key :current_target_words with the value from :target_words
-      sentences = add_key(sentences, :current_target_words) do |row|
-        row[:target_words]
-      end
+      # On every round:
+      # Finds the sentence with the most target words ('best sentence').
+      # Adds that sentence to the result array.
+      # Deletes all target words from the remaining words that are part of
+      # the best sentence.
+      while(!remaining_words.empty?) do
+        puts "Number of remaining_words: #{remaining_words.size}"
+        # puts "Take five: #{remaining_words.take(5)}"
 
-      already_found_words = []
+        # Return the sentence with the largest number of target words.
+        sentences = sentences.sort_by do |row|
+          # Returns a new array containing elements common to
+          # the two arrays, with no duplicates.
+          words_left = remaining_words.intersection(row[:target_words])
 
-      begin
-
-        sentences = sort_by do |sentence|
-          remaining_words = remaining_words(sentence, already_found_words)
-
-          [remaining_words.size, sentence[:chinese].size]
+          # Sort by size of words left first (in descsending order),
+          # if equal, sort by length of the Chinese sentence (in ascending order).
+          [-words_left.size, row[:chinese].size]
         end
 
         best_sentence = sentences.first
-        min_sentences       << best_sentence
-        already_found_words << best_sentence[:current_target_words]
 
-      end while (remaining_words(sentences, already_found_words)).size >= 1
+        # Add the sentence with the largest number of
+        # target words to the result array.
+        min_sentences << best_sentence
+        # Remove the target words that are part of the
+        # best sentence from the remaining words.
+        remaining_words = remaining_words - best_sentence[:target_words]
+      end
 
-      puts "Number of minimum sentences: #{min_sentences.size}"
+      # puts "Number of minimum sentences: #{min_sentences.size}"
       min_sentences
     end
-
-
-    def remaining_words(sentence, word_list)
-      sentence[:current_target_words] - word_list
-    end
-
-
-
 
 
     # Finds the unique Chinese characters from either the data in {#stored_sentences} or an
@@ -556,6 +521,7 @@ module Chinese
         Thread.new(words) do
 
           while(row = from_queue.pop!)
+            puts "Queue size: #{from_queue.size}"
             sentence     = row[:chinese]
             target_words = target_words_per_sentence(sentence, words)
 
