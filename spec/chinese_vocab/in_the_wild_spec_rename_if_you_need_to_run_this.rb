@@ -4,7 +4,7 @@ require 'spec_helper'
 describe Chinese::Vocab do
 
   context :full_run do
-    words = Chinese::Vocab.parse_words('../../hsk_data/word_lists/old_hsk_level_8828_chars_1_word_edited.csv', 4)
+    words = Chinese::Vocab.parse_words('../../hsk_data/word_lists/traditional_hsk_level_8828_chars_1_word_edited.csv', 4)
     p words.take(6)
 
     anki = Chinese::Vocab.new(words, :compact => true)
