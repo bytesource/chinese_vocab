@@ -46,6 +46,8 @@ In order to save precious bandwidth for these great sites,  please do __only use
 
 ## Real World Example (Using the Traditional HSK Word List)
 
+__Note__: The number of required sentences to cover all words could be reduced by about __39%__.
+
 ```` ruby
 # Import words from source.
 # First argument:  path to file
