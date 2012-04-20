@@ -25,7 +25,7 @@ module Chinese
       word.scan(/\p{Word}+/)      # Returns an array of characters that belong together.
     end
 
-    # Return true if every distince word (as defined by #distinct_words)
+    # Return true if every distinct word as defined by {#distinct_words}
     # can be found in the given sentence.
     def include_every_char?(word, sentence)
       characters = distinct_words(word)
