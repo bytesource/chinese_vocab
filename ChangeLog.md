@@ -1,6 +1,13 @@
+## Version 0.9.2 (April 20, 2012)
+
+#### Other
+* `Straper`:
+ * Changed default sentence size from `:average` to `:short`.
+
+
 ## Version 0.9.0 (April 20, 2012)
 
-#### Others
+#### Features
 * `Vocab`:
  * Added `#word_frequency`.
  * Added `#find_minimum_sentences`: new and faster algorithm to calculate the minimum number of required sentences.
