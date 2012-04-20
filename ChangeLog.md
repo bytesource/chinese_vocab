@@ -1,9 +1,11 @@
-## Future Version
+## Version 0.9.0 (April 20, 2012)
 
 #### Others
 * `Vocab`:
- * Added #word_frequency
- * Added #sort_by_word_occurrence_quotient
+ * Added `#word_frequency`.
+ * Added `#find_minimum_sentences`: new and faster algorithm to calculate the minimum number of required sentences.
+* `Scraper`:
+ * Removed timeout restriction.
 
 ### Bug Fixes
 * `Scraper`: Don't impose a minimum sentence length if this constraint would exclude all sentences.
