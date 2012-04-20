@@ -39,7 +39,7 @@ module Chinese
   }
 
   OPTIONS =  {:source =>  [:nciku,  lambda {|value| Sources.keys.include?(value) }],
-              :size   =>  [:average, lambda {|value| [:short, :average, :long].include?(value) }]}
+              :size   =>  [:short, lambda {|value| [:short, :average, :long].include?(value) }]}
 
 
     # Options:
