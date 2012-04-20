@@ -182,7 +182,8 @@ describe Chinese::Vocab do
 
       specify do
         sentences = [{chinese: "我们跟他们是好朋友。"}, {chinese: "你你你你你你"}, {chinese: "我我我"}]
-        vocab.word_frequency(sentences).should ==
+        vocab.stub(:stored_sentences) { sentences }
+        vocab.word_frequency.should ==
           {"我"=>2, "打"=>0, "他"=>1, "他们"=>1, "谁"=>0, "越 来越"=>0, "除了 以外"=>0, "浮鞋"=>0}
       end
 

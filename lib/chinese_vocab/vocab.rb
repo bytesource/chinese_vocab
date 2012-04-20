@@ -553,27 +553,19 @@ module Chinese
         #     first.nonzero? || (a[:chinese].size <=> b[:chinese].size) }
     end
 
-    def word_frequency(sentences)
+    # Calculates the number of occurences of every word of {#words} in {#stored_sentences}
+    # @return [Hash] Keys are the words in {#words} with the values indicating the number of
+    #   occurences in {#stored_sentences}
+    def word_frequency
 
       words.reduce({}) do |acc, word|
         acc[word] = 0 # Set key with a default value of zero.
 
-        sentences.each do |row|
+        stored_sentences.each do |row|
           sentence = row[:chinese]
           acc[word] += 1 if include_every_char?(word, sentence)
         end
         acc
-      end
-    end
-
-    def sort_by_word_occurrence_quotient(with_target_words)
-      with_target_words.sort_by do |row|
-        frequency = word_frequency(sentences)
-        target_words = row[:target_words]
-        occurrence = occurrence_count(target_words, frequency)
-        quotient = Float(occurrence / target_words.size)
-
-        [quotient, row[:chinese].size]
       end
     end
 
